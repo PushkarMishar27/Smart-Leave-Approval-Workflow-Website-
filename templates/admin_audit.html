@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Audit Logs — SmartLeave</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+
+    <div class="app-wrapper">
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <div class="logo-icon"><i class="fas fa-calendar-check"></i></div>
+                <span class="logo-text">SmartLeave</span>
+            </div>
+            <ul class="sidebar-menu">
+                <li><a href="/admin/dashboard"><i class="fas fa-chart-pie"></i> Overview</a></li>
+                <li><a href="/admin/users"><i class="fas fa-users-gear"></i> User Management</a></li>
+                <li><a href="/admin/roles"><i class="fas fa-shield-halved"></i> Roles & RBAC</a></li>
+                <li><a href="/admin/workflow"><i class="fas fa-network-wired"></i> Workflow Rules</a></li>
+                <li><a href="/admin/policies"><i class="fas fa-sliders"></i> Leave Policies</a></li>
+                <li class="active"><a href="/admin/audit"><i class="fas fa-file-shield"></i> Audit Logs</a></li>
+                <li><a href="/admin/reports"><i class="fas fa-chart-line"></i> Analytics Reports</a></li>
+            </ul>
+            <div class="sidebar-footer">
+                <div class="user-avatar">A</div>
+                <div class="user-info">
+                    <div class="name">Administrator</div>
+                    <div class="role">System Control Center</div>
+                </div>
+            </div>
+        </aside>
+
+        <main class="main-wrapper">
+            <header class="top-header">
+                <div class="header-left">
+                    <h3 style="font-size: 1.1rem; font-weight: 700;">Immutable System Audit Trail</h3>
+                </div>
+                <div class="header-right">
+                    <button class="icon-btn" id="theme-toggle-btn" title="Toggle Theme"></button>
+                    <a href="/api/auth/logout" class="btn btn-secondary" style="padding: 0.4rem 0.85rem; font-size: 0.8rem;">Logout</a>
+                </div>
+            </header>
+
+            <div class="content-area">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
+                    <div>
+                        <h1 style="font-size: 1.8rem;">Centralized Audit Logs 📜</h1>
+                        <p style="color: var(--text-secondary); font-size: 0.95rem;">Tamper-proof record of logins, leave approvals, user updates, and policy changes.</p>
+                    </div>
+                    <a href="/api/admin/audit-logs/export" class="btn btn-primary" download>
+                        <i class="fas fa-download"></i> Export Audit Logs CSV
+                    </a>
+                </div>
+
+                <div class="card">
+                    <div class="table-responsive">
+                        <table class="table">
+                            <thead>
+                                <tr>
+                                    <th>Audit ID</th>
+                                    <th>Timestamp</th>
+                                    <th>User</th>
+                                    <th>Role</th>
+                                    <th>Action</th>
+                                    <th>Entity</th>
+                                    <th>Metadata</th>
+                                    <th>IP Address</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for log in audit_logs %}
+                                <tr>
+                                    <td style="font-weight: 700; color: var(--primary);">#AUD-{{ "%04d"|format(log.id) }}</td>
+                                    <td style="font-size: 0.8rem; color: var(--text-muted);">{{ log.created_at }}</td>
+                                    <td><strong>{{ log.user_name or 'System' }}</strong></td>
+                                    <td><span class="badge badge-personal">{{ log.role_name or 'System' }}</span></td>
+                                    <td><strong style="color: var(--primary);">{{ log.action }}</strong></td>
+                                    <td>{{ log.entity }} #{{ log.entity_id or '' }}</td>
+                                    <td style="font-size: 0.75rem; font-family: monospace; color: var(--text-secondary);">
+                                        {{ log.metadata }}
+                                    </td>
+                                    <td style="font-size: 0.8rem;">{{ log.ip_address }}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+            </div>
+        </main>
+    </div>
+
+    <script src="/static/js/main.js"></script>
+</body>
+</html>

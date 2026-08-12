@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Student Portal — SmartLeave</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+
+    <div class="app-wrapper">
+        <!-- Sidebar Navigation -->
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <div class="logo-icon"><i class="fas fa-calendar-check"></i></div>
+                <span class="logo-text">SmartLeave</span>
+            </div>
+            <ul class="sidebar-menu">
+                <li class="active"><a href="/student/dashboard"><i class="fas fa-grid-2"></i> Overview</a></li>
+                <li><a href="/student/apply"><i class="fas fa-plus-circle"></i> Apply for Leave</a></li>
+                <li><a href="/student/requests"><i class="fas fa-clock-rotate-left"></i> My Requests</a></li>
+                <li><a href="/profile"><i class="fas fa-user-circle"></i> Profile & MFA</a></li>
+            </ul>
+            <div class="sidebar-footer">
+                <div class="user-avatar">{{ user.name[0] }}</div>
+                <div class="user-info">
+                    <div class="name">{{ user.name }}</div>
+                    <div class="role">{{ user.employee_id }} • Student</div>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Main Wrapper -->
+        <main class="main-wrapper">
+            <!-- Top Navbar -->
+            <header class="top-header">
+                <div class="header-left">
+                    <div class="search-box">
+                        <i class="fas fa-search"></i>
+                        <input type="text" placeholder="Search my requests...">
+                    </div>
+                </div>
+                <div class="header-right">
+                    <button class="icon-btn" id="theme-toggle-btn" title="Toggle Theme"></button>
+                    <div style="position: relative;">
+                        <button class="icon-btn" id="notif-bell-btn">
+                            <i class="fas fa-bell"></i>
+                            <span class="badge-dot" id="notif-badge"></span>
+                        </button>
+                        <div id="notif-dropdown" style="position: absolute; right: 0; top: 50px; width: 320px; background: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--radius-md); box-shadow: var(--shadow-lg); display: none; z-index: 100;">
+                            <div style="padding: 1rem; border-bottom: 1px solid var(--border-color); font-weight: 700; font-size: 0.9rem;">Notifications</div>
+                            <div id="notif-list-container" style="max-height: 300px; overflow-y: auto;"></div>
+                        </div>
+                    </div>
+                    <a href="/api/auth/logout" class="btn btn-secondary" style="padding: 0.4rem 0.85rem; font-size: 0.8rem;">
+                        <i class="fas fa-sign-out-alt"></i> Logout
+                    </a>
+                </div>
+            </header>
+
+            <!-- Main Content Area -->
+            <div class="content-area">
+                <!-- Welcome Banner -->
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
+                    <div>
+                        <h1 style="font-size: 1.8rem;">Good morning, {{ user.name }} 👋</h1>
+                        <p style="color: var(--text-secondary); font-size: 0.95rem;">Here’s your leave overview and balance status.</p>
+                    </div>
+                    <a href="/student/apply" class="btn btn-primary" style="padding: 0.75rem 1.35rem;">
+                        <i class="fas fa-plus"></i> + Apply for Leave
+                    </a>
+                </div>
+
+                <!-- 4 Statistic Cards -->
+                <div class="grid-4">
+                    <div class="card stat-card">
+                        <div>
+                            <div class="stat-label">Available Leave</div>
+                            <div class="stat-val" style="color: var(--primary);">{{ balance.remaining }} Days</div>
+                            <div style="font-size: 0.75rem; color: var(--text-muted);">Out of {{ balance.allocated }} allocated days</div>
+                        </div>
+                        <div class="stat-icon primary"><i class="fas fa-wallet"></i></div>
+                    </div>
+
+                    <div class="card stat-card">
+                        <div>
+                            <div class="stat-label">Used Leave</div>
+                            <div class="stat-val" style="color: var(--secondary);">{{ balance.used }} Days</div>
+                            <div style="font-size: 0.75rem; color: var(--text-muted);">Approved absences</div>
+                        </div>
+                        <div class="stat-icon secondary"><i class="fas fa-calendar-minus"></i></div>
+                    </div>
+
+                    <div class="card stat-card">
+                        <div>
+                            <div class="stat-label">Pending Requests</div>
+                            <div class="stat-val" style="color: var(--warning);">{{ balance.pending }}</div>
+                            <div style="font-size: 0.75rem; color: var(--text-muted);">Under Faculty/Admin review</div>
+                        </div>
+                        <div class="stat-icon warning"><i class="fas fa-hourglass-half"></i></div>
+                    </div>
+
+                    <div class="card stat-card">
+                        <div>
+                            <div class="stat-label">Approved This Year</div>
+                            <div class="stat-val" style="color: var(--success);">{{ balance.approved_count }}</div>
+                            <div style="font-size: 0.75rem; color: var(--text-muted);">Successful applications</div>
+                        </div>
+                        <div class="stat-icon success"><i class="fas fa-circle-check"></i></div>
+                    </div>
+                </div>
+
+                <!-- Quick Actions & Recent Requests Grid -->
+                <div class="grid-2">
+                    <!-- Recent Leave Applications Table -->
+                    <div class="card">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem;">
+                            <h3 style="font-size: 1.1rem;">My Recent Leave Applications</h3>
+                            <a href="/student/requests" style="font-size: 0.85rem; font-weight: 600;">View All <i class="fas fa-arrow-right"></i></a>
+                        </div>
+
+                        {% if recent_requests and recent_requests|length > 0 %}
+                        <div class="table-responsive">
+                            <table class="table">
+                                <thead>
+                                    <tr>
+                                        <th>Req ID</th>
+                                        <th>Leave Type</th>
+                                        <th>Dates</th>
+                                        <th>Days</th>
+                                        <th>AI Category</th>
+                                        <th>Status</th>
+                                        <th>Action</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for req in recent_requests %}
+                                    <tr>
+                                        <td style="font-weight: 700; color: var(--primary);">{{ req.request_number }}</td>
+                                        <td>{{ req.leave_type }}</td>
+                                        <td>{{ req.start_date }} to {{ req.end_date }}</td>
+                                        <td><strong>{{ req.total_days }}d</strong></td>
+                                        <td>
+                                            <span class="badge badge-{{ req.ai_category|lower }}">
+                                                {{ req.ai_category }}
+                                            </span>
+                                        </td>
+                                        <td>
+                                            <span class="badge badge-{{ req.status|lower }}">
+                                                {{ req.status }}
+                                            </span>
+                                        </td>
+                                        <td>
+                                            <a href="/request/{{ req.id }}" class="btn btn-secondary" style="padding: 0.3rem 0.65rem; font-size: 0.75rem;">
+                                                <i class="fas fa-eye"></i> Track
+                                            </a>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                        {% else %}
+                        <div style="padding: 3rem; text-align: center; color: var(--text-muted);">
+                            <i class="fas fa-folder-open" style="font-size: 2.5rem; margin-bottom: 1rem;"></i>
+                            <h4>No leave requests submitted yet</h4>
+                            <p style="font-size: 0.85rem; margin-top: 0.25rem;">Your submitted applications will appear here.</p>
+                            <a href="/student/apply" class="btn btn-primary" style="margin-top: 1rem; font-size: 0.85rem;">
+                                + Apply for Leave
+                            </a>
+                        </div>
+                        {% endif %}
+                    </div>
+
+                    <!-- Leave Balance Usage Progress Card -->
+                    <div class="card">
+                        <h3 style="font-size: 1.1rem; margin-bottom: 1rem;">Leave Balance Breakdown</h3>
+                        
+                        <div style="margin-bottom: 1.5rem;">
+                            <div style="display: flex; justify-content: space-between; font-size: 0.85rem; font-weight: 600; margin-bottom: 0.4rem;">
+                                <span>Used Allowance</span>
+                                <span>{{ balance.used }} / {{ balance.allocated }} Days</span>
+                            </div>
+                            <div style="height: 10px; background: var(--bg-main); border-radius: var(--radius-full); overflow: hidden; border: 1px solid var(--border-color);">
+                                <div style="height: 100%; width: {{ (balance.used / balance.allocated * 100)|round(1) }}%; background: linear-gradient(90deg, var(--primary), var(--accent)); border-radius: var(--radius-full);"></div>
+                            </div>
+                        </div>
+
+                        <div style="display: flex; flex-direction: column; gap: 0.85rem;">
+                            <div style="display: flex; justify-content: space-between; font-size: 0.85rem; padding: 0.65rem; background: var(--bg-main); border-radius: var(--radius-sm);">
+                                <span><i class="fas fa-circle" style="color: var(--primary); font-size: 0.6rem;"></i> Casual Leave</span>
+                                <strong>12 Allocated</strong>
+                            </div>
+                            <div style="display: flex; justify-content: space-between; font-size: 0.85rem; padding: 0.65rem; background: var(--bg-main); border-radius: var(--radius-sm);">
+                                <span><i class="fas fa-circle" style="color: var(--secondary); font-size: 0.6rem;"></i> Medical Leave</span>
+                                <strong>10 Allocated</strong>
+                            </div>
+                            <div style="display: flex; justify-content: space-between; font-size: 0.85rem; padding: 0.65rem; background: var(--bg-main); border-radius: var(--radius-sm);">
+                                <span><i class="fas fa-circle" style="color: var(--accent); font-size: 0.6rem;"></i> Personal Leave</span>
+                                <strong>8 Allocated</strong>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </main>
+    </div>
+
+    <script src="/static/js/main.js"></script>
+</body>
+</html>

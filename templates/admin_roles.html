@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Roles & RBAC Matrix — SmartLeave</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+
+    <div class="app-wrapper">
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <div class="logo-icon"><i class="fas fa-calendar-check"></i></div>
+                <span class="logo-text">SmartLeave</span>
+            </div>
+            <ul class="sidebar-menu">
+                <li><a href="/admin/dashboard"><i class="fas fa-chart-pie"></i> Overview</a></li>
+                <li><a href="/admin/users"><i class="fas fa-users-gear"></i> User Management</a></li>
+                <li class="active"><a href="/admin/roles"><i class="fas fa-shield-halved"></i> Roles & RBAC</a></li>
+                <li><a href="/admin/workflow"><i class="fas fa-network-wired"></i> Workflow Rules</a></li>
+                <li><a href="/admin/policies"><i class="fas fa-sliders"></i> Leave Policies</a></li>
+                <li><a href="/admin/audit"><i class="fas fa-file-shield"></i> Audit Logs</a></li>
+                <li><a href="/admin/reports"><i class="fas fa-chart-line"></i> Analytics Reports</a></li>
+            </ul>
+            <div class="sidebar-footer">
+                <div class="user-avatar">A</div>
+                <div class="user-info">
+                    <div class="name">Administrator</div>
+                    <div class="role">System Control Center</div>
+                </div>
+            </div>
+        </aside>
+
+        <main class="main-wrapper">
+            <header class="top-header">
+                <div class="header-left">
+                    <h3 style="font-size: 1.1rem; font-weight: 700;">Role-Based Access Control (RBAC) Matrix</h3>
+                </div>
+                <div class="header-right">
+                    <button class="icon-btn" id="theme-toggle-btn" title="Toggle Theme"></button>
+                    <a href="/api/auth/logout" class="btn btn-secondary" style="padding: 0.4rem 0.85rem; font-size: 0.8rem;">Logout</a>
+                </div>
+            </header>
+
+            <div class="content-area">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
+                    <div>
+                        <h1 style="font-size: 1.8rem;">Role Permissions & Privileges 🛡️</h1>
+                        <p style="color: var(--text-secondary); font-size: 0.95rem;">Configure fine-grained system access levels for each institutional role.</p>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="table-responsive">
+                        <table class="table">
+                            <thead>
+                                <tr>
+                                    <th>Permission Name</th>
+                                    <th>Description</th>
+                                    <th style="text-align: center;">Student / Employee</th>
+                                    <th style="text-align: center;">Faculty / Approver</th>
+                                    <th style="text-align: center;">Admin</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td><strong>apply_leave</strong></td>
+                                    <td>Submit new leave applications</td>
+                                    <td style="text-align: center;"><i class="fas fa-circle-check" style="color: var(--success); font-size: 1.2rem;"></i></td>
+                                    <td style="text-align: center;"><i class="fas fa-circle-check" style="color: var(--success); font-size: 1.2rem;"></i></td>
+                                    <td style="text-align: center;"><i class="fas fa-circle-check" style="color: var(--success); font-size: 1.2rem;"></i></td>
+                                </tr>
+                                <tr>
+                                    <td><strong>view_own_requests</strong></td>
+                                    <td>View personal leave requests & balance</td>
+                                    <td style="text-align: center;"><i class="fas fa-circle-check" style="color: var(--success); font-size: 1.2rem;"></i></td>
+                                    <td style="text-align: center;"><i class="fas fa-circle-check" style="color: var(--success); font-size: 1.2rem;"></i></td>
+                                    <td style="text-align: center;"><i class="fas fa-circle-check" style="color: var(--success); font-size: 1.2rem;"></i></td>
+                                </tr>
+                                <tr>
+                                    <td><strong>review_assigned_leaves</strong></td>
+                                    <td>Approve, reject, or forward pending assigned leaves</td>
+                                    <td style="text-align: center;"><i class="fas fa-circle-xmark" style="color: var(--text-muted); font-size: 1.2rem;"></i></td>
+                                    <td style="text-align: center;"><i class="fas fa-circle-check" style="color: var(--success); font-size: 1.2rem;"></i></td>
+                                    <td style="text-align: center;"><i class="fas fa-circle-check" style="color: var(--success); font-size: 1.2rem;"></i></td>
+                                </tr>
+                                <tr>
+                                    <td><strong>manage_users</strong></td>
+                                    <td>Add, edit, or disable user accounts</td>
+                                    <td style="text-align: center;"><i class="fas fa-circle-xmark" style="color: var(--text-muted); font-size: 1.2rem;"></i></td>
+                                    <td style="text-align: center;"><i class="fas fa-circle-xmark" style="color: var(--text-muted); font-size: 1.2rem;"></i></td>
+                                    <td style="text-align: center;"><i class="fas fa-circle-check" style="color: var(--success); font-size: 1.2rem;"></i></td>
+                                </tr>
+                                <tr>
+                                    <td><strong>manage_policies</strong></td>
+                                    <td>Modify leave allowances and threshold rules</td>
+                                    <td style="text-align: center;"><i class="fas fa-circle-xmark" style="color: var(--text-muted); font-size: 1.2rem;"></i></td>
+                                    <td style="text-align: center;"><i class="fas fa-circle-xmark" style="color: var(--text-muted); font-size: 1.2rem;"></i></td>
+                                    <td style="text-align: center;"><i class="fas fa-circle-check" style="color: var(--success); font-size: 1.2rem;"></i></td>
+                                </tr>
+                                <tr>
+                                    <td><strong>view_audit_logs</strong></td>
+                                    <td>View and export system audit trail logs</td>
+                                    <td style="text-align: center;"><i class="fas fa-circle-xmark" style="color: var(--text-muted); font-size: 1.2rem;"></i></td>
+                                    <td style="text-align: center;"><i class="fas fa-circle-xmark" style="color: var(--text-muted); font-size: 1.2rem;"></i></td>
+                                    <td style="text-align: center;"><i class="fas fa-circle-check" style="color: var(--success); font-size: 1.2rem;"></i></td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+            </div>
+        </main>
+    </div>
+
+    <script src="/static/js/main.js"></script>
+</body>
+</html>

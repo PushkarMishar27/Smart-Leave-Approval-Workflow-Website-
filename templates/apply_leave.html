@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Apply for Leave — SmartLeave</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        .form-stepper {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 2.5rem;
+            position: relative;
+        }
+
+        .form-stepper::before {
+            content: '';
+            position: absolute;
+            top: 20px;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: var(--border-color);
+            z-index: 1;
+        }
+
+        .step-node {
+            position: relative;
+            z-index: 2;
+            background: var(--bg-card);
+            padding: 0 0.85rem;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 0.35rem;
+        }
+
+        .step-circle {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: var(--bg-main);
+            border: 2px solid var(--border-color);
+            color: var(--text-muted);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-size: 0.9rem;
+            transition: var(--transition);
+        }
+
+        .step-node.active .step-circle {
+            background: var(--primary);
+            border-color: var(--primary);
+            color: #FFF;
+            box-shadow: 0 0 15px rgba(99, 102, 241, 0.35);
+        }
+
+        .step-label {
+            font-size: 0.8rem;
+            font-weight: 600;
+            color: var(--text-secondary);
+        }
+
+        .dropzone {
+            border: 2px dashed var(--border-color);
+            border-radius: var(--radius-md);
+            padding: 2rem;
+            text-align: center;
+            cursor: pointer;
+            transition: var(--transition);
+            background: var(--bg-main);
+        }
+
+        .dropzone:hover {
+            border-color: var(--primary);
+            background: var(--primary-light);
+        }
+    </style>
+</head>
+<body>
+
+    <div class="app-wrapper">
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <div class="logo-icon"><i class="fas fa-calendar-check"></i></div>
+                <span class="logo-text">SmartLeave</span>
+            </div>
+            <ul class="sidebar-menu">
+                <li><a href="/student/dashboard"><i class="fas fa-grid-2"></i> Overview</a></li>
+                <li class="active"><a href="/student/apply"><i class="fas fa-plus-circle"></i> Apply for Leave</a></li>
+                <li><a href="/student/requests"><i class="fas fa-clock-rotate-left"></i> My Requests</a></li>
+                <li><a href="/profile"><i class="fas fa-user-circle"></i> Profile & MFA</a></li>
+            </ul>
+            <div class="sidebar-footer">
+                <div class="user-avatar">{{ user.name[0] }}</div>
+                <div class="user-info">
+                    <div class="name">{{ user.name }}</div>
+                    <div class="role">{{ user.employee_id }} • Student</div>
+                </div>
+            </div>
+        </aside>
+
+        <main class="main-wrapper">
+            <header class="top-header">
+                <div class="header-left">
+                    <h3 style="font-size: 1.1rem; font-weight: 700;">Leave Application Form</h3>
+                </div>
+                <div class="header-right">
+                    <button class="icon-btn" id="theme-toggle-btn" title="Toggle Theme"></button>
+                    <a href="/api/auth/logout" class="btn btn-secondary" style="padding: 0.4rem 0.85rem; font-size: 0.8rem;">Logout</a>
+                </div>
+            </header>
+
+            <div class="content-area" style="max-width: 800px; margin: 0 auto;">
+                
+                <!-- Multi-Step Header Indicator -->
+                <div class="form-stepper">
+                    <div class="step-node active" id="step-node-1">
+                        <div class="step-circle">01</div>
+                        <span class="step-label">Details</span>
+                    </div>
+                    <div class="step-node" id="step-node-2">
+                        <div class="step-circle">02</div>
+                        <span class="step-label">Reason</span>
+                    </div>
+                    <div class="step-node" id="step-node-3">
+                        <div class="step-circle">03</div>
+                        <span class="step-label">Review</span>
+                    </div>
+                    <div class="step-node" id="step-node-4">
+                        <div class="step-circle">04</div>
+                        <span class="step-label">Submit</span>
+                    </div>
+                </div>
+
+                <!-- Form Card -->
+                <div class="card" style="padding: 2.5rem;">
+                    <form id="leave-application-form" onsubmit="handleLeaveFormSubmit(event)">
+                        
+                        <!-- Step 1: Leave Type & Dates -->
+                        <div id="step-section-1">
+                            <h3 style="font-size: 1.2rem; margin-bottom: 1.25rem;">Step 1: Leave Details</h3>
+                            
+                            <div style="margin-bottom: 1.25rem;">
+                                <label style="display: block; font-size: 0.85rem; font-weight: 600; margin-bottom: 0.4rem;">Leave Type</label>
+                                <select id="leave-type-select" class="btn btn-secondary" style="width: 100%; text-align: left; padding: 0.75rem 1rem;" required>
+                                    <option value="Casual Leave">Casual Leave</option>
+                                    <option value="Medical Leave">Medical Leave</option>
+                                    <option value="Personal Leave">Personal Leave</option>
+                                    <option value="Emergency Leave">Emergency Leave</option>
+                                </select>
+                            </div>
+
+                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1.25rem;">
+                                <div>
+                                    <label style="display: block; font-size: 0.85rem; font-weight: 600; margin-bottom: 0.4rem;">Start Date</label>
+                                    <input type="date" id="start-date-input" class="btn btn-secondary" style="width: 100%; padding: 0.75rem;" onchange="calculateTotalDays()" required>
+                                </div>
+                                <div>
+                                    <label style="display: block; font-size: 0.85rem; font-weight: 600; margin-bottom: 0.4rem;">End Date</label>
+                                    <input type="date" id="end-date-input" class="btn btn-secondary" style="width: 100%; padding: 0.75rem;" onchange="calculateTotalDays()" required>
+                                </div>
+                            </div>
+
+                            <div style="background: var(--bg-main); padding: 0.85rem 1.15rem; border-radius: var(--radius-sm); border: 1px solid var(--border-color); margin-bottom: 1.5rem; display: flex; justify-content: space-between; align-items: center;">
+                                <span style="font-size: 0.85rem; color: var(--text-secondary);">Calculated Duration:</span>
+                                <strong id="calculated-days-badge" style="font-size: 1.1rem; color: var(--primary);">1 Day</strong>
+                            </div>
+
+                            <button type="button" onclick="goToStep(2)" class="btn btn-primary" style="width: 100%; padding: 0.8rem;">
+                                Next: Reason & AI Insights <i class="fas fa-arrow-right"></i>
+                            </button>
+                        </div>
+
+                        <!-- Step 2: Reason & AI Classification -->
+                        <div id="step-section-2" style="display: none;">
+                            <h3 style="font-size: 1.2rem; margin-bottom: 1.25rem;">Step 2: Reason & AI Classification</h3>
+                            
+                            <div style="margin-bottom: 1.25rem;">
+                                <label style="display: block; font-size: 0.85rem; font-weight: 600; margin-bottom: 0.4rem;">Reason for Leave</label>
+                                <textarea id="leave-reason-textarea" rows="4" style="width: 100%; padding: 0.85rem; border-radius: var(--radius-sm); border: 1px solid var(--border-color); background: var(--bg-main); color: var(--text-primary); outline: none; font-family: var(--font-sans);" placeholder="Provide a clear description of your leave reason..." required></textarea>
+                            </div>
+
+                            <!-- Live AI Classification Container -->
+                            <div id="ai-classification-container" style="display: none; margin-bottom: 1.5rem;"></div>
+                            
+                            <input type="hidden" id="ai-category-hidden" value="Personal">
+                            <input type="hidden" id="ai-confidence-hidden" value="85.0">
+
+                            <!-- Drag and Drop Supporting Document -->
+                            <div style="margin-bottom: 1.5rem;">
+                                <label style="display: block; font-size: 0.85rem; font-weight: 600; margin-bottom: 0.4rem;">Supporting Document (Optional)</label>
+                                <div class="dropzone" id="doc-dropzone" onclick="showToast('File selected: medical_certificate.pdf', 'info')">
+                                    <i class="fas fa-cloud-arrow-up" style="font-size: 2rem; color: var(--primary); margin-bottom: 0.5rem;"></i>
+                                    <div style="font-weight: 600; font-size: 0.9rem;">Drag & drop document here or click to browse</div>
+                                    <div style="font-size: 0.75rem; color: var(--text-muted); margin-top: 0.25rem;">PDF, PNG, or JPG up to 5MB</div>
+                                </div>
+                            </div>
+
+                            <div style="display: flex; gap: 1rem;">
+                                <button type="button" onclick="goToStep(1)" class="btn btn-secondary" style="flex: 1; padding: 0.8rem;">Back</button>
+                                <button type="button" onclick="goToStep(3)" class="btn btn-primary" style="flex: 2; padding: 0.8rem;">Review Summary <i class="fas fa-arrow-right"></i></button>
+                            </div>
+                        </div>
+
+                        <!-- Step 3: Review & Confirmation Summary -->
+                        <div id="step-section-3" style="display: none;">
+                            <h3 style="font-size: 1.2rem; margin-bottom: 1.25rem;">Step 3: Review Confirmation</h3>
+                            
+                            <div style="background: var(--bg-main); border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 1.5rem; margin-bottom: 1.5rem;">
+                                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem; padding-bottom: 1rem; border-bottom: 1px solid var(--border-color);">
+                                    <div>
+                                        <div style="font-size: 0.75rem; color: var(--text-muted);">Leave Type</div>
+                                        <strong id="summary-leave-type">-</strong>
+                                    </div>
+                                    <div>
+                                        <div style="font-size: 0.75rem; color: var(--text-muted);">Duration</div>
+                                        <strong id="summary-duration">-</strong>
+                                    </div>
+                                </div>
+
+                                <div style="margin-bottom: 1rem;">
+                                    <div style="font-size: 0.75rem; color: var(--text-muted);">Reason</div>
+                                    <p id="summary-reason" style="font-size: 0.875rem; color: var(--text-primary); margin-top: 0.25rem;">-</p>
+                                </div>
+
+                                <div>
+                                    <div style="font-size: 0.75rem; color: var(--text-muted);">AI Classification</div>
+                                    <span class="badge badge-medical" id="summary-ai-badge">Medical (92.4%)</span>
+                                </div>
+                            </div>
+
+                            <div style="display: flex; gap: 1rem;">
+                                <button type="button" onclick="goToStep(2)" class="btn btn-secondary" style="flex: 1; padding: 0.8rem;">Back</button>
+                                <button type="submit" id="submit-leave-btn" class="btn btn-primary" style="flex: 2; padding: 0.8rem;">
+                                    Submit Leave Request <i class="fas fa-check"></i>
+                                </button>
+                            </div>
+                        </div>
+
+                    </form>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script src="/static/js/main.js"></script>
+    <script src="/static/js/nlp.js"></script>
+    <script>
+        let calculatedDays = 1;
+
+        function calculateTotalDays() {
+            const start = document.getElementById('start-date-input').value;
+            const end = document.getElementById('end-date-input').value;
+
+            if (start && end) {
+                const d1 = new Date(start);
+                const d2 = new Date(end);
+                const diffTime = d2 - d1;
+                const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
+
+                if (diffDays > 0) {
+                    calculatedDays = diffDays;
+                    document.getElementById('calculated-days-badge').innerText = `${diffDays} Day(s)`;
+                } else {
+                    document.getElementById('calculated-days-badge').innerText = `Invalid date range`;
+                }
+            }
+        }
+
+        function goToStep(step) {
+            document.querySelectorAll('[id^="step-section-"]').forEach(sec => sec.style.display = 'none');
+            document.querySelectorAll('.step-node').forEach(node => node.classList.remove('active'));
+
+            document.getElementById(`step-section-${step}`).style.display = 'block';
+            for (let i = 1; i <= step; i++) {
+                document.getElementById(`step-node-${i}`).classList.add('active');
+            }
+
+            if (step === 3) {
+                // Populate review summary
+                document.getElementById('summary-leave-type').innerText = document.getElementById('leave-type-select').value;
+                document.getElementById('summary-duration').innerText = `${document.getElementById('start-date-input').value} to ${document.getElementById('end-date-input').value} (${calculatedDays} Days)`;
+                document.getElementById('summary-reason').innerText = document.getElementById('leave-reason-textarea').value;
+                
+                const cat = document.getElementById('ai-category-hidden').value;
+                const conf = document.getElementById('ai-confidence-hidden').value;
+                const badge = document.getElementById('summary-ai-badge');
+                badge.className = `badge badge-${cat.toLowerCase()}`;
+                badge.innerText = `${cat} (${conf}% confidence)`;
+            }
+        }
+
+        async function handleLeaveFormSubmit(e) {
+            e.preventDefault();
+            const btn = document.getElementById('submit-leave-btn');
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Submitting...';
+
+            const payload = {
+                leave_type: document.getElementById('leave-type-select').value,
+                start_date: document.getElementById('start-date-input').value,
+                end_date: document.getElementById('end-date-input').value,
+                total_days: calculatedDays,
+                reason: document.getElementById('leave-reason-textarea').value
+            };
+
+            try {
+                const res = await fetch('/api/leaves', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                const data = await res.json();
+
+                if (data.success) {
+                    showToast(data.message, 'success');
+                    setTimeout(() => {
+                        window.location.href = '/student/dashboard';
+                    }, 1000);
+                } else {
+                    showToast(data.message || 'Error submitting leave.', 'danger');
+                }
+            } catch (err) {
+                showToast('Network error during leave submission.', 'danger');
+            } finally {
+                btn.disabled = false;
+            }
+        }
+
+        // Set default dates
+        document.addEventListener('DOMContentLoaded', () => {
+            const today = new Date().toISOString().split('T')[0];
+            document.getElementById('start-date-input').value = today;
+            document.getElementById('end-date-input').value = today;
+            calculateTotalDays();
+        });
+    </script>
+</body>
+</html>

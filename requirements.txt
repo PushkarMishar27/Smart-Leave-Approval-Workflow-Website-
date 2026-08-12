@@ -1,0 +1,7 @@
+flask>=3.0.0
+pyotp>=2.9.0
+scikit-learn>=1.5.0
+pymysql>=1.1.0
+mysql-connector-python>=8.0.0
+werkzeug>=3.0.0
+numpy>=1.24.0

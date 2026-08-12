@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>User Management — SmartLeave</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+
+    <div class="app-wrapper">
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <div class="logo-icon"><i class="fas fa-calendar-check"></i></div>
+                <span class="logo-text">SmartLeave</span>
+            </div>
+            <ul class="sidebar-menu">
+                <li><a href="/admin/dashboard"><i class="fas fa-chart-pie"></i> Overview</a></li>
+                <li class="active"><a href="/admin/users"><i class="fas fa-users-gear"></i> User Management</a></li>
+                <li><a href="/admin/roles"><i class="fas fa-shield-halved"></i> Roles & RBAC</a></li>
+                <li><a href="/admin/workflow"><i class="fas fa-network-wired"></i> Workflow Rules</a></li>
+                <li><a href="/admin/policies"><i class="fas fa-sliders"></i> Leave Policies</a></li>
+                <li><a href="/admin/audit"><i class="fas fa-file-shield"></i> Audit Logs</a></li>
+                <li><a href="/admin/reports"><i class="fas fa-chart-line"></i> Analytics Reports</a></li>
+            </ul>
+            <div class="sidebar-footer">
+                <div class="user-avatar">A</div>
+                <div class="user-info">
+                    <div class="name">Administrator</div>
+                    <div class="role">System Control Center</div>
+                </div>
+            </div>
+        </aside>
+
+        <main class="main-wrapper">
+            <header class="top-header">
+                <div class="header-left">
+                    <h3 style="font-size: 1.1rem; font-weight: 700;">User Management & Accounts</h3>
+                </div>
+                <div class="header-right">
+                    <button class="icon-btn" id="theme-toggle-btn" title="Toggle Theme"></button>
+                    <a href="/api/auth/logout" class="btn btn-secondary" style="padding: 0.4rem 0.85rem; font-size: 0.8rem;">Logout</a>
+                </div>
+            </header>
+
+            <div class="content-area">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
+                    <div>
+                        <h1 style="font-size: 1.8rem;">Registered Users 👥</h1>
+                        <p style="color: var(--text-secondary); font-size: 0.95rem;">Manage accounts, roles, departments, and MFA credentials.</p>
+                    </div>
+                    <button class="btn btn-primary" onclick="openAddUserModal()">
+                        <i class="fas fa-user-plus"></i> + Add New User
+                    </button>
+                </div>
+
+                <div class="card">
+                    <div class="table-responsive">
+                        <table class="table">
+                            <thead>
+                                <tr>
+                                    <th>ID / Employee</th>
+                                    <th>Name & Email</th>
+                                    <th>Department</th>
+                                    <th>Role</th>
+                                    <th>MFA Status</th>
+                                    <th>Account Status</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for u in users %}
+                                <tr>
+                                    <td style="font-weight: 700; color: var(--primary);">{{ u.employee_id }}</td>
+                                    <td>
+                                        <div style="font-weight: 600;">{{ u.name }}</div>
+                                        <div style="font-size: 0.75rem; color: var(--text-muted);">{{ u.email }}</div>
+                                    </td>
+                                    <td>{{ u.department_name }}</td>
+                                    <td><span class="badge badge-personal">{{ u.role_name }}</span></td>
+                                    <td>
+                                        {% if u.mfa_enabled %}
+                                        <span class="badge badge-approved"><i class="fas fa-shield"></i> TOTP Active</span>
+                                        {% else %}
+                                        <span class="badge badge-rejected">Disabled</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <span class="badge badge-{% if u.status == 'Active' %}approved{% else %}rejected{% endif %}">
+                                            {{ u.status }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <button onclick="resetMfa({{ u.id }}, '{{ u.name }}')" class="btn btn-secondary" style="padding: 0.3rem 0.65rem; font-size: 0.75rem;">
+                                            <i class="fas fa-key"></i> Reset MFA
+                                        </button>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+            </div>
+        </main>
+    </div>
+
+    <!-- Add User Modal -->
+    <div class="modal-overlay" id="add-user-modal">
+        <div class="modal-container">
+            <div class="modal-header">
+                <h3>Add New System User</h3>
+                <button class="icon-btn" onclick="closeAddUserModal()"><i class="fas fa-xmark"></i></button>
+            </div>
+            <div class="modal-body">
+                <form id="add-user-form" onsubmit="handleAddUserSubmit(event)">
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
+                        <div>
+                            <label style="font-size: 0.85rem; font-weight: 600;">Employee / Student ID</label>
+                            <input type="text" id="new-emp-id" class="form-input" style="padding: 0.65rem;" placeholder="e.g. STU1009" required>
+                        </div>
+                        <div>
+                            <label style="font-size: 0.85rem; font-weight: 600;">Full Name</label>
+                            <input type="text" id="new-name" class="form-input" style="padding: 0.65rem;" placeholder="e.g. Emma Watson" required>
+                        </div>
+                    </div>
+
+                    <div style="margin-bottom: 1rem;">
+                        <label style="font-size: 0.85rem; font-weight: 600;">Email Address</label>
+                        <input type="email" id="new-email" class="form-input" style="padding: 0.65rem;" placeholder="emma@smartleave.edu" required>
+                    </div>
+
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1.5rem;">
+                        <div>
+                            <label style="font-size: 0.85rem; font-weight: 600;">System Role</label>
+                            <select id="new-role" class="btn btn-secondary" style="width: 100%; padding: 0.65rem; text-align: left;">
+                                <option value="1">Student / Employee</option>
+                                <option value="2">Faculty / Approver</option>
+                                <option value="3">Admin</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label style="font-size: 0.85rem; font-weight: 600;">Department</label>
+                            <select id="new-dept" class="btn btn-secondary" style="width: 100%; padding: 0.65rem; text-align: left;">
+                                <option value="1">Computer Science</option>
+                                <option value="2">Information Technology</option>
+                                <option value="3">Electronics & Comm.</option>
+                                <option value="4">Mechanical Eng.</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary" style="width: 100%; padding: 0.75rem;">Create User Account</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script src="/static/js/main.js"></script>
+    <script>
+        function openAddUserModal() { document.getElementById('add-user-modal').classList.add('active'); }
+        function closeAddUserModal() { document.getElementById('add-user-modal').classList.remove('active'); }
+
+        async function handleAddUserSubmit(e) {
+            e.preventDefault();
+            const payload = {
+                employee_id: document.getElementById('new-emp-id').value,
+                name: document.getElementById('new-name').value,
+                email: document.getElementById('new-email').value,
+                role_id: document.getElementById('new-role').value,
+                department_id: document.getElementById('new-dept').value
+            };
+
+            try {
+                const res = await fetch('/api/admin/users', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                const data = await res.json();
+                if (data.success) {
+                    showToast(data.message, 'success');
+                    closeAddUserModal();
+                    setTimeout(() => location.reload(), 800);
+                } else {
+                    showToast(data.message, 'danger');
+                }
+            } catch (err) {
+                showToast('Error creating user', 'danger');
+            }
+        }
+
+        async function resetMfa(userId, userName) {
+            if (confirm(`Reset TOTP MFA credentials for ${userName}?`)) {
+                const res = await fetch(`/api/admin/users/${userId}/reset-mfa`, { method: 'POST' });
+                const data = await res.json();
+                if (data.success) {
+                    showToast(data.message, 'success');
+                }
+            }
+        }
+    </script>
+</body>
+</html>

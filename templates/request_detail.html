@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Request Tracking — SmartLeave</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+
+    <div class="app-wrapper">
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <div class="logo-icon"><i class="fas fa-calendar-check"></i></div>
+                <span class="logo-text">SmartLeave</span>
+            </div>
+            <ul class="sidebar-menu">
+                <li><a href="/student/dashboard"><i class="fas fa-grid-2"></i> Overview</a></li>
+                <li><a href="/student/apply"><i class="fas fa-plus-circle"></i> Apply for Leave</a></li>
+                <li class="active"><a href="/student/requests"><i class="fas fa-clock-rotate-left"></i> My Requests</a></li>
+                <li><a href="/profile"><i class="fas fa-user-circle"></i> Profile & MFA</a></li>
+            </ul>
+            <div class="sidebar-footer">
+                <div class="user-avatar">U</div>
+                <div class="user-info">
+                    <div class="name">SmartLeave User</div>
+                    <div class="role">Tracking View</div>
+                </div>
+            </div>
+        </aside>
+
+        <main class="main-wrapper">
+            <header class="top-header">
+                <div class="header-left">
+                    <a href="/student/dashboard" class="btn btn-secondary" style="padding: 0.4rem 0.75rem; font-size: 0.8rem;">
+                        <i class="fas fa-arrow-left"></i> Back to Dashboard
+                    </a>
+                </div>
+                <div class="header-right">
+                    <button class="icon-btn" id="theme-toggle-btn" title="Toggle Theme"></button>
+                    <a href="/api/auth/logout" class="btn btn-secondary" style="padding: 0.4rem 0.85rem; font-size: 0.8rem;">Logout</a>
+                </div>
+            </header>
+
+            <div class="content-area" style="max-width: 900px; margin: 0 auto;">
+                
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+                    <div>
+                        <h1 style="font-size: 1.6rem;" id="req-number-header">Request {{ leave.request_number }}</h1>
+                        <p style="color: var(--text-secondary); font-size: 0.9rem;">Submitted on {{ leave.created_at }}</p>
+                    </div>
+                    <span class="badge badge-{{ leave.status|lower }}" style="font-size: 0.9rem; padding: 0.4rem 1rem;">
+                        {{ leave.status }}
+                    </span>
+                </div>
+
+                <div class="grid-2">
+                    <!-- Request Summary -->
+                    <div class="card">
+                        <h3 style="font-size: 1.1rem; margin-bottom: 1rem; border-bottom: 1px solid var(--border-color); padding-bottom: 0.75rem;">
+                            Leave Application Details
+                        </h3>
+
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
+                            <div>
+                                <div style="font-size: 0.75rem; color: var(--text-muted);">Applicant</div>
+                                <strong>{{ leave.user_name }} ({{ leave.employee_id }})</strong>
+                            </div>
+                            <div>
+                                <div style="font-size: 0.75rem; color: var(--text-muted);">Department</div>
+                                <strong>{{ leave.department_name }}</strong>
+                            </div>
+                            <div>
+                                <div style="font-size: 0.75rem; color: var(--text-muted);">Leave Type</div>
+                                <strong>{{ leave.leave_type }}</strong>
+                            </div>
+                            <div>
+                                <div style="font-size: 0.75rem; color: var(--text-muted);">Total Duration</div>
+                                <strong>{{ leave.start_date }} to {{ leave.end_date }} ({{ leave.total_days }} Days)</strong>
+                            </div>
+                        </div>
+
+                        <div style="margin-bottom: 1rem;">
+                            <div style="font-size: 0.75rem; color: var(--text-muted);">Reason Provided</div>
+                            <p style="font-size: 0.9rem; color: var(--text-primary); margin-top: 0.25rem; background: var(--bg-main); padding: 0.85rem; border-radius: var(--radius-sm); border: 1px solid var(--border-color);">
+                                {{ leave.reason }}
+                            </p>
+                        </div>
+
+                        <div>
+                            <div style="font-size: 0.75rem; color: var(--text-muted); margin-bottom: 0.25rem;">AI Classification Insight</div>
+                            <span class="badge badge-{{ leave.ai_category|lower }}" style="font-size: 0.85rem;">
+                                <i class="fas fa-brain"></i> {{ leave.ai_category }} ({{ leave.ai_confidence }}% confidence)
+                            </span>
+                        </div>
+                    </div>
+
+                    <!-- Vertical Approval Timeline -->
+                    <div class="card">
+                        <h3 style="font-size: 1.1rem; margin-bottom: 1rem; border-bottom: 1px solid var(--border-color); padding-bottom: 0.75rem;">
+                            Approval Stage Timeline
+                        </h3>
+
+                        <div class="timeline">
+                            <!-- Stage 1: Submission -->
+                            <div class="timeline-item done">
+                                <div class="timeline-icon"><i class="fas fa-check"></i></div>
+                                <div class="timeline-content">
+                                    <div style="font-weight: 700; font-size: 0.85rem;">Application Submitted</div>
+                                    <div style="font-size: 0.75rem; color: var(--text-muted);">{{ leave.created_at }}</div>
+                                </div>
+                            </div>
+
+                            <!-- Stage 2: AI Classification -->
+                            <div class="timeline-item done">
+                                <div class="timeline-icon"><i class="fas fa-brain"></i></div>
+                                <div class="timeline-content">
+                                    <div style="font-weight: 700; font-size: 0.85rem;">AI Reason Classification</div>
+                                    <div style="font-size: 0.75rem; color: var(--text-muted);">Category: {{ leave.ai_category }}</div>
+                                </div>
+                            </div>
+
+                            <!-- Stage 3: Approver Action Steps -->
+                            {% if approval_timeline and approval_timeline|length > 0 %}
+                                {% for step in approval_timeline %}
+                                <div class="timeline-item done">
+                                    <div class="timeline-icon"><i class="fas fa-check"></i></div>
+                                    <div class="timeline-content">
+                                        <div style="font-weight: 700; font-size: 0.85rem;">{{ step.level }} Review: {{ step.status }}</div>
+                                        <div style="font-size: 0.75rem; color: var(--text-muted);">By {{ step.approver_name }} ({{ step.action_at }})</div>
+                                        {% if step.comment %}
+                                        <div style="font-size: 0.8rem; font-style: italic; color: var(--text-secondary); margin-top: 0.25rem;">"{{ step.comment }}"</div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            {% else %}
+                                <div class="timeline-item active">
+                                    <div class="timeline-icon"><i class="fas fa-hourglass-half"></i></div>
+                                    <div class="timeline-content">
+                                        <div style="font-weight: 700; font-size: 0.85rem;">Faculty Review Pending</div>
+                                        <div style="font-size: 0.75rem; color: var(--text-muted);">Awaiting action from Department Approver</div>
+                                    </div>
+                                </div>
+                            {% endif %}
+
+                            <!-- Stage 4: Final Status -->
+                            {% if leave.status == 'Approved' %}
+                            <div class="timeline-item done">
+                                <div class="timeline-icon" style="background: var(--success);"><i class="fas fa-circle-check"></i></div>
+                                <div class="timeline-content" style="background: var(--success-bg);">
+                                    <div style="font-weight: 700; font-size: 0.85rem; color: #047857;">Final Decision: Approved</div>
+                                    <div style="font-size: 0.75rem; color: #047857;">Leave balance updated</div>
+                                </div>
+                            </div>
+                            {% elif leave.status == 'Rejected' %}
+                            <div class="timeline-item done">
+                                <div class="timeline-icon" style="background: var(--danger);"><i class="fas fa-xmark"></i></div>
+                                <div class="timeline-content" style="background: var(--danger-bg);">
+                                    <div style="font-weight: 700; font-size: 0.85rem; color: #B91C1C;">Final Decision: Rejected</div>
+                                </div>
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </main>
+    </div>
+
+    <script src="/static/js/main.js"></script>
+</body>
+</html>

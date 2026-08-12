@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Faculty Approval Center — SmartLeave</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+
+    <div class="app-wrapper">
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <div class="logo-icon"><i class="fas fa-calendar-check"></i></div>
+                <span class="logo-text">SmartLeave</span>
+            </div>
+            <ul class="sidebar-menu">
+                <li class="active"><a href="/approver/dashboard"><i class="fas fa-list-check"></i> Approval Queue</a></li>
+                <li><a href="/profile"><i class="fas fa-user-circle"></i> Profile & MFA</a></li>
+            </ul>
+            <div class="sidebar-footer">
+                <div class="user-avatar">{{ user.name[0] }}</div>
+                <div class="user-info">
+                    <div class="name">{{ user.name }}</div>
+                    <div class="role">Faculty / Approver</div>
+                </div>
+            </div>
+        </aside>
+
+        <main class="main-wrapper">
+            <header class="top-header">
+                <div class="header-left">
+                    <h3 style="font-size: 1.1rem; font-weight: 700;">Faculty Approval Center</h3>
+                </div>
+                <div class="header-right">
+                    <button class="icon-btn" id="theme-toggle-btn" title="Toggle Theme"></button>
+                    <a href="/api/auth/logout" class="btn btn-secondary" style="padding: 0.4rem 0.85rem; font-size: 0.8rem;">Logout</a>
+                </div>
+            </header>
+
+            <div class="content-area">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
+                    <div>
+                        <h1 style="font-size: 1.8rem;">Approver Control Panel 📋</h1>
+                        <p style="color: var(--text-secondary); font-size: 0.95rem;">Review pending leave requests for {{ user.department }} department.</p>
+                    </div>
+                </div>
+
+                <!-- Stat Cards -->
+                <div class="grid-4">
+                    <div class="card stat-card">
+                        <div>
+                            <div class="stat-label">Pending Requests</div>
+                            <div class="stat-val" style="color: var(--warning);">{{ stats.pending_count }}</div>
+                            <div style="font-size: 0.75rem; color: var(--text-muted);">Awaiting review</div>
+                        </div>
+                        <div class="stat-icon warning"><i class="fas fa-clock"></i></div>
+                    </div>
+
+                    <div class="card stat-card">
+                        <div>
+                            <div class="stat-label">Approved Today</div>
+                            <div class="stat-val" style="color: var(--success);">{{ stats.approved_today }}</div>
+                            <div style="font-size: 0.75rem; color: var(--text-muted);">Action taken</div>
+                        </div>
+                        <div class="stat-icon success"><i class="fas fa-check-circle"></i></div>
+                    </div>
+
+                    <div class="card stat-card">
+                        <div>
+                            <div class="stat-label">Forwarded</div>
+                            <div class="stat-val" style="color: var(--info);">{{ stats.forwarded_count }}</div>
+                            <div style="font-size: 0.75rem; color: var(--text-muted);">Escalated to Admin</div>
+                        </div>
+                        <div class="stat-icon secondary"><i class="fas fa-share"></i></div>
+                    </div>
+
+                    <div class="card stat-card">
+                        <div>
+                            <div class="stat-label">Urgent Requests</div>
+                            <div class="stat-val" style="color: var(--danger);">{{ stats.urgent_count }}</div>
+                            <div style="font-size: 0.75rem; color: var(--text-muted);">High priority AI alert</div>
+                        </div>
+                        <div class="stat-icon danger"><i class="fas fa-triangle-exclamation"></i></div>
+                    </div>
+                </div>
+
+                <!-- Pending Requests Table -->
+                <div class="card">
+                    <h3 style="font-size: 1.1rem; margin-bottom: 1.25rem;">Requests Awaiting My Review</h3>
+
+                    {% if pending_requests and pending_requests|length > 0 %}
+                    <div class="table-responsive">
+                        <table class="table">
+                            <thead>
+                                <tr>
+                                    <th>Applicant</th>
+                                    <th>Department</th>
+                                    <th>Leave Type</th>
+                                    <th>Dates & Days</th>
+                                    <th>AI Category</th>
+                                    <th>Submitted</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for req in pending_requests %}
+                                <tr style="{% if req.ai_category == 'Urgent' %}border-left: 4px solid var(--danger); background: #FFF5F5;{% endif %}">
+                                    <td>
+                                        <div style="font-weight: 700;">{{ req.user_name }}</div>
+                                        <div style="font-size: 0.75rem; color: var(--text-muted);">{{ req.employee_id }}</div>
+                                    </td>
+                                    <td>{{ req.department_name }}</td>
+                                    <td><strong>{{ req.leave_type }}</strong></td>
+                                    <td>{{ req.start_date }} ({{ req.total_days }}d)</td>
+                                    <td>
+                                        <span class="badge badge-{{ req.ai_category|lower }}">
+                                            {{ req.ai_category }} ({{ req.ai_confidence }}%)
+                                        </span>
+                                    </td>
+                                    <td>{{ req.created_at }}</td>
+                                    <td>
+                                        <div style="display: flex; gap: 0.4rem;">
+                                            <button onclick="openReviewModal({{ req.id }}, '{{ req.user_name }}', '{{ req.request_number }}', '{{ req.reason|escape }}')" class="btn btn-primary" style="padding: 0.3rem 0.65rem; font-size: 0.75rem;">
+                                                <i class="fas fa-magnifying-glass"></i> Review
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div style="padding: 3rem; text-align: center; color: var(--text-muted);">
+                        <i class="fas fa-clipboard-check" style="font-size: 2.5rem; margin-bottom: 1rem; color: var(--success);"></i>
+                        <h4>No pending requests waiting for your review 🎉</h4>
+                        <p style="font-size: 0.85rem; margin-top: 0.25rem;">All assigned leave applications have been processed.</p>
+                    </div>
+                    {% endif %}
+                </div>
+
+            </div>
+        </main>
+    </div>
+
+    <!-- Review Action Modal -->
+    <div class="modal-overlay" id="review-modal">
+        <div class="modal-container">
+            <div class="modal-header">
+                <h3 style="font-size: 1.1rem;" id="modal-req-title">Review Request</h3>
+                <button class="icon-btn" onclick="closeReviewModal()"><i class="fas fa-xmark"></i></button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="modal-req-id">
+                
+                <div style="background: var(--bg-main); padding: 1rem; border-radius: var(--radius-sm); margin-bottom: 1rem; border: 1px solid var(--border-color);">
+                    <div style="font-size: 0.75rem; color: var(--text-muted);">Applicant Reason</div>
+                    <p id="modal-req-reason" style="font-size: 0.875rem; color: var(--text-primary); margin-top: 0.25rem; font-weight: 500;"></p>
+                </div>
+
+                <div class="form-group">
+                    <label>Approver Comment / Rejection Reason</label>
+                    <textarea id="modal-comment" rows="3" class="form-input" style="padding: 0.75rem;" placeholder="Enter comments or mandatory rejection reason..."></textarea>
+                </div>
+                
+                <div style="font-size: 0.75rem; color: var(--text-muted);">
+                    <i class="fas fa-shield-halved"></i> Action will be permanently recorded in system audit logs.
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" onclick="submitReviewAction('Reject')" class="btn btn-danger">Reject Request</button>
+                <button type="button" onclick="submitReviewAction('Forward')" class="btn btn-secondary">Forward to Admin</button>
+                <button type="button" onclick="submitReviewAction('Approve')" class="btn btn-primary">Approve Request</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="/static/js/main.js"></script>
+    <script>
+        function openReviewModal(id, name, reqNum, reason) {
+            document.getElementById('modal-req-id').value = id;
+            document.getElementById('modal-req-title').innerText = `Review ${reqNum} — ${name}`;
+            document.getElementById('modal-req-reason').innerText = reason;
+            document.getElementById('modal-comment').value = '';
+            document.getElementById('review-modal').classList.add('active');
+        }
+
+        function closeReviewModal() {
+            document.getElementById('review-modal').classList.remove('active');
+        }
+
+        async function submitReviewAction(action) {
+            const reqId = document.getElementById('modal-req-id').value;
+            const comment = document.getElementById('modal-comment').value.trim();
+
+            if (action === 'Reject' && !comment) {
+                showToast('A rejection reason is required before rejecting.', 'warning');
+                return;
+            }
+
+            let endpoint = `/api/leaves/${reqId}/` + action.toLowerCase();
+            
+            try {
+                const res = await fetch(endpoint, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ comment: comment })
+                });
+                const data = await res.json();
+
+                if (data.success) {
+                    showToast(data.message, 'success');
+                    closeReviewModal();
+                    setTimeout(() => location.reload(), 800);
+                } else {
+                    showToast(data.message || 'Error processing request.', 'danger');
+                }
+            } catch (err) {
+                showToast('Network error processing approval action.', 'danger');
+            }
+        }
+    </script>
+</body>
+</html>

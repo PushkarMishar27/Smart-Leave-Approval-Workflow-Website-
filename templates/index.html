@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SmartLeave — Leave management, intelligently simplified</title>
+    <meta name="description" content="Smart digital leave management platform for Students, Faculty, and Administrators with AI reason classification, TOTP MFA, and automated multi-level workflows.">
+    <link rel="stylesheet" href="/static/css/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        /* Landing Page Specific Hero Styles */
+        .hero-section {
+            padding: 5rem 2rem 4rem;
+            max-width: 1280px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 3rem;
+            align-items: center;
+        }
+
+        .hero-title {
+            font-size: 3rem;
+            font-weight: 800;
+            line-height: 1.15;
+            margin-bottom: 1.25rem;
+            background: linear-gradient(135deg, var(--text-primary), var(--primary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .hero-sub {
+            font-size: 1.15rem;
+            color: var(--text-secondary);
+            margin-bottom: 2rem;
+            line-height: 1.6;
+        }
+
+        .hero-mockup-wrapper {
+            position: relative;
+        }
+
+        .hero-mockup-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-lg);
+            padding: 1.5rem;
+            box-shadow: var(--shadow-lg);
+            position: relative;
+            z-index: 2;
+        }
+
+        /* Floating Preview Cards */
+        .float-card {
+            position: absolute;
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-md);
+            padding: 0.75rem 1.15rem;
+            box-shadow: var(--shadow-md);
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            z-index: 3;
+            font-size: 0.85rem;
+            font-weight: 600;
+            animation: float 3s ease-in-out infinite alternate;
+        }
+
+        .float-1 { top: -20px; left: -20px; animation-delay: 0s; }
+        .float-2 { bottom: -15px; right: -15px; animation-delay: 1s; }
+        .float-3 { top: 40%; right: -25px; animation-delay: 2s; }
+
+        @keyframes float {
+            0% { transform: translateY(0); }
+            100% { transform: translateY(-10px); }
+        }
+
+        .feature-grid {
+            max-width: 1280px;
+            margin: 4rem auto;
+            padding: 0 2rem;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 2rem;
+        }
+
+        .workflow-step {
+            text-align: center;
+            padding: 1.5rem;
+            position: relative;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Landing Navigation -->
+    <header class="top-header" style="position: relative;">
+        <div class="header-left">
+            <div class="logo-icon"><i class="fas fa-calendar-check"></i></div>
+            <span class="logo-text">SmartLeave</span>
+        </div>
+        <div class="header-right">
+            <button class="icon-btn" id="theme-toggle-btn" title="Toggle Dark/Light Mode"></button>
+            <a href="/login" class="btn btn-secondary">Sign In</a>
+            <a href="/login" class="btn btn-primary">Get Started <i class="fas fa-arrow-right"></i></a>
+        </div>
+    </header>
+
+    <!-- Hero Section -->
+    <section class="hero-section">
+        <div>
+            <span class="badge badge-personal" style="margin-bottom: 1rem; font-size: 0.85rem; padding: 0.4rem 1rem;">
+                <i class="fas fa-sparkles"></i> Next-Gen Institution Leave Management
+            </span>
+            <h1 class="hero-title">Smart Leave Management for Modern Institutions</h1>
+            <p class="hero-sub">Automate leave applications, approvals, notifications, and balance tracking with one secure intelligent workflow system.</p>
+            <div style="display: flex; gap: 1rem; flex-wrap: wrap;">
+                <a href="/login" class="btn btn-primary" style="padding: 0.85rem 1.75rem; font-size: 1rem;">
+                    Get Started <i class="fas fa-chevron-right"></i>
+                </a>
+                <a href="#features" class="btn btn-secondary" style="padding: 0.85rem 1.75rem; font-size: 1rem;">
+                    View Features
+                </a>
+            </div>
+        </div>
+
+        <div class="hero-mockup-wrapper">
+            <!-- Floating cards -->
+            <div class="float-card float-1">
+                <i class="fas fa-check-circle" style="color: var(--success); font-size: 1.1rem;"></i>
+                <div>
+                    <div>Leave Approved</div>
+                    <div style="font-size: 0.75rem; color: var(--text-muted);">LV-2026-002 • 2 Days</div>
+                </div>
+            </div>
+
+            <div class="float-card float-2">
+                <i class="fas fa-brain" style="color: var(--accent); font-size: 1.1rem;"></i>
+                <div>
+                    <div>AI Classification</div>
+                    <div style="font-size: 0.75rem; color: var(--danger); font-weight: 700;">Urgent (94.8%)</div>
+                </div>
+            </div>
+
+            <div class="float-card float-3">
+                <i class="fas fa-wallet" style="color: var(--secondary); font-size: 1.1rem;"></i>
+                <div>
+                    <div>Balance Updated</div>
+                    <div style="font-size: 0.75rem; color: var(--text-muted);">18 Days Available</div>
+                </div>
+            </div>
+
+            <div class="hero-mockup-card">
+                <div style="display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--border-color); padding-bottom: 1rem; margin-bottom: 1.25rem;">
+                    <div style="display: flex; align-items: center; gap: 0.5rem;">
+                        <span style="width: 12px; height: 12px; border-radius: 50%; background: #FF5F56; display: inline-block;"></span>
+                        <span style="width: 12px; height: 12px; border-radius: 50%; background: #FFBD2E; display: inline-block;"></span>
+                        <span style="width: 12px; height: 12px; border-radius: 50%; background: #27C93F; display: inline-block;"></span>
+                    </div>
+                    <span style="font-size: 0.75rem; color: var(--text-muted); font-weight: 600;">SmartLeave Dashboard Preview</span>
+                </div>
+
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1.25rem;">
+                    <div style="background: var(--bg-main); padding: 1rem; border-radius: var(--radius-sm); border: 1px solid var(--border-color);">
+                        <div style="font-size: 0.75rem; color: var(--text-muted);">Available Leaves</div>
+                        <div style="font-size: 1.75rem; font-weight: 800; color: var(--primary);">18 Days</div>
+                    </div>
+                    <div style="background: var(--bg-main); padding: 1rem; border-radius: var(--radius-sm); border: 1px solid var(--border-color);">
+                        <div style="font-size: 0.75rem; color: var(--text-muted);">Pending Approvals</div>
+                        <div style="font-size: 1.75rem; font-weight: 800; color: var(--warning);">2 Requests</div>
+                    </div>
+                </div>
+
+                <div style="background: var(--bg-main); padding: 1rem; border-radius: var(--radius-sm); border: 1px solid var(--border-color);">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+                        <span style="font-weight: 600; font-size: 0.85rem;">Recent Request #LV-2026-001</span>
+                        <span class="badge badge-pending">🟡 Pending Faculty</span>
+                    </div>
+                    <div style="font-size: 0.8rem; color: var(--text-secondary);">Medical Leave • Aug 12 – Aug 14 (3 Days)</div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Problem & Solution Section -->
+    <section id="features" style="background: var(--bg-card); padding: 5rem 2rem; border-top: 1px solid var(--border-color); border-bottom: 1px solid var(--border-color);">
+        <div style="max-width: 1280px; margin: 0 auto; text-align: center;">
+            <h2 style="font-size: 2.25rem; margin-bottom: 1rem;">Why Move Away From Manual Forms?</h2>
+            <p style="color: var(--text-secondary); max-width: 650px; margin: 0 auto 3rem;">Replace paper applications, WhatsApp group approvals, and lost emails with an automated, transparent, and auditable digital platform.</p>
+        </div>
+
+        <div class="feature-grid">
+            <div class="card">
+                <div class="stat-icon primary" style="margin-bottom: 1.25rem;"><i class="fas fa-paper-plane"></i></div>
+                <h3 style="font-size: 1.15rem; margin-bottom: 0.5rem;">1. Smart Applications</h3>
+                <p style="font-size: 0.875rem; color: var(--text-secondary);">Multi-step intuitive leave request submission with date auto-calculation and file attachments.</p>
+            </div>
+
+            <div class="card">
+                <div class="stat-icon secondary" style="margin-bottom: 1.25rem;"><i class="fas fa-network-wired"></i></div>
+                <h3 style="font-size: 1.15rem; margin-bottom: 0.5rem;">2. Automated Approval</h3>
+                <p style="font-size: 0.875rem; color: var(--text-secondary);">Configurable multi-level routing from Faculty to Admin with automated threshold escalation.</p>
+            </div>
+
+            <div class="card">
+                <div class="stat-icon accent" style="margin-bottom: 1.25rem; background: rgba(139, 92, 246, 0.1); color: var(--accent);"><i class="fas fa-brain"></i></div>
+                <h3 style="font-size: 1.15rem; margin-bottom: 0.5rem;">3. AI-Powered Classification</h3>
+                <p style="font-size: 0.875rem; color: var(--text-secondary);">Machine learning NLP analysis categorizes leave reasons into Medical, Personal, or Urgent with confidence scoring.</p>
+            </div>
+
+            <div class="card">
+                <div class="stat-icon success" style="margin-bottom: 1.25rem;"><i class="fas fa-chart-line"></i></div>
+                <h3 style="font-size: 1.15rem; margin-bottom: 0.5rem;">4. Real-Time Analytics</h3>
+                <p style="font-size: 0.875rem; color: var(--text-secondary);">Live leave balances, notification alerts, immutable audit trails, and exportable reports.</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- Visual Workflow Section -->
+    <section style="padding: 5rem 2rem; max-width: 1280px; margin: 0 auto; text-align: center;">
+        <h2 style="font-size: 2.25rem; margin-bottom: 1rem;">End-to-End Automated Workflow</h2>
+        <p style="color: var(--text-secondary); margin-bottom: 3rem;">From application to decision in minutes with complete transparency.</p>
+
+        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1.5rem;">
+            <div class="card workflow-step" style="flex: 1; min-width: 180px;">
+                <div class="stat-icon primary" style="margin: 0 auto 1rem;"><i class="fas fa-pen-to-square"></i></div>
+                <div style="font-weight: 700; font-size: 0.95rem;">01. Apply</div>
+                <div style="font-size: 0.8rem; color: var(--text-secondary); margin-top: 0.25rem;">User submits request</div>
+            </div>
+
+            <i class="fas fa-chevron-right" style="color: var(--text-muted); font-size: 1.2rem;"></i>
+
+            <div class="card workflow-step" style="flex: 1; min-width: 180px;">
+                <div class="stat-icon accent" style="margin: 0 auto 1rem; background: rgba(139, 92, 246, 0.1); color: var(--accent);"><i class="fas fa-robot"></i></div>
+                <div style="font-weight: 700; font-size: 0.95rem;">02. AI Classify</div>
+                <div style="font-size: 0.8rem; color: var(--text-secondary); margin-top: 0.25rem;">NLP analyzes urgency</div>
+            </div>
+
+            <i class="fas fa-chevron-right" style="color: var(--text-muted); font-size: 1.2rem;"></i>
+
+            <div class="card workflow-step" style="flex: 1; min-width: 180px;">
+                <div class="stat-icon warning" style="margin: 0 auto 1rem;"><i class="fas fa-user-check"></i></div>
+                <div style="font-weight: 700; font-size: 0.95rem;">03. Faculty Review</div>
+                <div style="font-size: 0.8rem; color: var(--text-secondary); margin-top: 0.25rem;">Department approval</div>
+            </div>
+
+            <i class="fas fa-chevron-right" style="color: var(--text-muted); font-size: 1.2rem;"></i>
+
+            <div class="card workflow-step" style="flex: 1; min-width: 180px;">
+                <div class="stat-icon success" style="margin: 0 auto 1rem;"><i class="fas fa-shield-check"></i></div>
+                <div style="font-weight: 700; font-size: 0.95rem;">04. Decision & Audit</div>
+                <div style="font-size: 0.8rem; color: var(--text-secondary); margin-top: 0.25rem;">Balance auto-updated</div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Final CTA -->
+    <section style="background: linear-gradient(135deg, var(--primary-dark), var(--accent)); padding: 4rem 2rem; color: #FFF; text-align: center;">
+        <h2 style="font-size: 2.25rem; margin-bottom: 1rem; color: #FFF;">Ready to simplify leave management?</h2>
+        <p style="opacity: 0.9; margin-bottom: 2rem; font-size: 1.1rem;">Sign in now with your Student, Faculty, or Admin account.</p>
+        <a href="/login" class="btn" style="background: #FFF; color: var(--primary-dark); padding: 0.85rem 2rem; font-size: 1rem; font-weight: 700;">
+            Sign In to SmartLeave <i class="fas fa-arrow-right"></i>
+        </a>
+    </section>
+
+    <script src="/static/js/main.js"></script>
+</body>
+</html>

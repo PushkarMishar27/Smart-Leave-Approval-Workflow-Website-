@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sign In — SmartLeave</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        .login-wrapper {
+            display: grid;
+            grid-template-columns: 1.1fr 1fr;
+            min-height: 100vh;
+        }
+
+        .login-left {
+            background: linear-gradient(135deg, var(--bg-sidebar), #1E1B4B);
+            color: #FFF;
+            padding: 4rem;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .login-right {
+            background: var(--bg-main);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 2rem;
+        }
+
+        .login-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-lg);
+            padding: 2.5rem;
+            width: 100%;
+            max-width: 480px;
+            box-shadow: var(--shadow-lg);
+        }
+
+        .role-tabs {
+            display: flex;
+            background: var(--bg-main);
+            padding: 0.35rem;
+            border-radius: var(--radius-md);
+            border: 1px solid var(--border-color);
+            margin-bottom: 1.5rem;
+        }
+
+        .role-tab-btn {
+            flex: 1;
+            padding: 0.6rem 0.5rem;
+            border: none;
+            background: transparent;
+            font-size: 0.8rem;
+            font-weight: 600;
+            color: var(--text-secondary);
+            border-radius: var(--radius-sm);
+            cursor: pointer;
+            transition: var(--transition);
+        }
+
+        .role-tab-btn.active {
+            background: var(--bg-card);
+            color: var(--primary);
+            box-shadow: var(--shadow-sm);
+        }
+
+        .form-group {
+            margin-bottom: 1.25rem;
+        }
+
+        .form-group label {
+            display: block;
+            font-size: 0.85rem;
+            font-weight: 600;
+            margin-bottom: 0.4rem;
+            color: var(--text-primary);
+        }
+
+        .form-input-wrapper {
+            position: relative;
+        }
+
+        .form-input {
+            width: 100%;
+            padding: 0.75rem 1rem 0.75rem 2.5rem;
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-sm);
+            background: var(--bg-main);
+            color: var(--text-primary);
+            font-size: 0.9rem;
+            outline: none;
+            transition: var(--transition);
+        }
+
+        .form-input:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15);
+        }
+
+        .form-input-icon {
+            position: absolute;
+            left: 0.85rem;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--text-muted);
+            font-size: 0.9rem;
+        }
+
+        .pwd-toggle-icon {
+            position: absolute;
+            right: 0.85rem;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--text-muted);
+            cursor: pointer;
+        }
+
+        /* 6-box OTP Input */
+        .otp-container {
+            display: flex;
+            gap: 0.65rem;
+            justify-content: center;
+            margin: 1.5rem 0;
+        }
+
+        .otp-box {
+            width: 50px;
+            height: 55px;
+            text-align: center;
+            font-size: 1.5rem;
+            font-weight: 700;
+            border: 2px solid var(--border-color);
+            border-radius: var(--radius-sm);
+            background: var(--bg-main);
+            color: var(--text-primary);
+            outline: none;
+            transition: var(--transition);
+        }
+
+        .otp-box:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.2);
+        }
+
+        @media (max-width: 900px) {
+            .login-wrapper { grid-template-columns: 1fr; }
+            .login-left { display: none; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="login-wrapper">
+        <!-- Left Branding Panel -->
+        <div class="login-left">
+            <div>
+                <div style="display: flex; align-items: center; gap: 0.75rem; margin-bottom: 2rem;">
+                    <div class="logo-icon"><i class="fas fa-calendar-check"></i></div>
+                    <span class="logo-text" style="font-size: 1.5rem;">SmartLeave</span>
+                </div>
+
+                <h1 style="font-size: 2.5rem; line-height: 1.2; margin-bottom: 1rem; color: #FFF;">
+                    Leave management, intelligently simplified.
+                </h1>
+                <p style="color: #94A3B8; font-size: 1.05rem; line-height: 1.6;">
+                    Enterprise digital leave platform with AI reason classification, multi-level approval workflows, TOTP MFA security, and real-time tracking.
+                </p>
+            </div>
+
+            <div style="background: rgba(255, 255, 255, 0.05); padding: 1.25rem; border-radius: var(--radius-md); border: 1px solid rgba(255, 255, 255, 0.1);">
+                <div style="display: flex; align-items: center; gap: 0.5rem; font-weight: 700; font-size: 0.9rem; color: #10B981; margin-bottom: 0.25rem;">
+                    <i class="fas fa-shield-halved"></i> Enterprise RBAC & TOTP Protection
+                </div>
+                <div style="font-size: 0.8rem; color: #94A3B8;">
+                    All access attempts are verified server-side and recorded in immutable audit logs.
+                </div>
+            </div>
+        </div>
+
+        <!-- Right Login Card Panel -->
+        <div class="login-right">
+            <div class="login-card">
+                
+                <!-- Header -->
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+                    <div>
+                        <h2 style="font-size: 1.4rem; font-weight: 800;">Welcome back 👋</h2>
+                        <p style="font-size: 0.85rem; color: var(--text-secondary);">Select your role to log in</p>
+                    </div>
+                    <button class="icon-btn" id="theme-toggle-btn" title="Toggle Theme"></button>
+                </div>
+
+                <!-- Role Selector Tabs -->
+                <div class="role-tabs">
+                    <button type="button" class="role-tab-btn active" data-role="Student/Employee">Student/Employee</button>
+                    <button type="button" class="role-tab-btn" data-role="Faculty/Approver">Faculty/Approver</button>
+                    <button type="button" class="role-tab-btn" data-role="Admin">Admin</button>
+                </div>
+
+                <!-- Step 1: ID & Password Form -->
+                <form id="login-step-1" onsubmit="handleLoginSubmit(event)">
+                    <div class="form-group">
+                        <label id="employee-id-label">College / Employee ID</label>
+                        <div class="form-input-wrapper">
+                            <i class="fas fa-id-card form-input-icon"></i>
+                            <input type="text" id="employee-id-input" class="form-input" placeholder="e.g. STU1001 or FAC2001" required>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Password</label>
+                        <div class="form-input-wrapper">
+                            <i class="fas fa-lock form-input-icon"></i>
+                            <input type="password" id="password-input" class="form-input" placeholder="••••••••" required>
+                            <i class="fas fa-eye pwd-toggle-icon" id="toggle-password-btn"></i>
+                        </div>
+                    </div>
+
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; font-size: 0.85rem;">
+                        <label style="display: flex; align-items: center; gap: 0.4rem; cursor: pointer; color: var(--text-secondary);">
+                            <input type="checkbox" checked style="accent-color: var(--primary);"> Remember me
+                        </label>
+                        <a href="#" onclick="showToast('Contact administrator to reset password.', 'info')" style="font-weight: 600;">Forgot Password?</a>
+                    </div>
+
+                    <button type="submit" id="login-submit-btn" class="btn btn-primary" style="width: 100%; padding: 0.8rem;">
+                        Continue to MFA <i class="fas fa-arrow-right"></i>
+                    </button>
+                </form>
+
+                <!-- Step 2: TOTP 6-Digit OTP Verification Modal UI -->
+                <div id="mfa-step-2" style="display: none; animation: fadeIn 0.4s ease-out;">
+                    <div style="text-align: center; margin-bottom: 1.25rem;">
+                        <div style="width: 50px; height: 50px; border-radius: 50%; background: var(--primary-light); color: var(--primary); display: inline-flex; align-items: center; justify-content: center; font-size: 1.25rem; margin-bottom: 0.5rem;">
+                            <i class="fas fa-key"></i>
+                        </div>
+                        <h3 style="font-size: 1.15rem; font-weight: 700;">Two-Factor Authentication</h3>
+                        <p style="font-size: 0.85rem; color: var(--text-secondary); margin-top: 0.25rem;">Enter your 6-digit authentication code</p>
+                    </div>
+
+                    <form onsubmit="handleMfaVerify(event)">
+                        <div class="otp-container">
+                            <input type="text" maxlength="1" class="otp-box" autofocus>
+                            <input type="text" maxlength="1" class="otp-box">
+                            <input type="text" maxlength="1" class="otp-box">
+                            <input type="text" maxlength="1" class="otp-box">
+                            <input type="text" maxlength="1" class="otp-box">
+                            <input type="text" maxlength="1" class="otp-box">
+                        </div>
+
+                        <div style="display: flex; justify-content: space-between; align-items: center; font-size: 0.8rem; color: var(--text-muted); margin-bottom: 1.25rem;">
+                            <span id="otp-timer">Code expires in 30s</span>
+                            <span style="color: var(--primary); font-weight: 600;">Demo Code: 123456</span>
+                        </div>
+
+                        <button type="submit" id="mfa-verify-btn" class="btn btn-primary" style="width: 100%; padding: 0.8rem;">
+                            Verify & Continue <i class="fas fa-check"></i>
+                        </button>
+                    </form>
+                </div>
+
+                <!-- Demo Accounts Fill Section -->
+                <div style="margin-top: 2rem; padding-top: 1.25rem; border-top: 1px dashed var(--border-color);">
+                    <div style="font-size: 0.75rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.75rem; display: flex; align-items: center; justify-content: space-between;">
+                        <span>⚡ Demo Accounts Quick Login</span>
+                        <span style="color: var(--success); text-transform: none;"><i class="fas fa-circle-check"></i> Dev Mode Active</span>
+                    </div>
+
+                    <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+                        <button type="button" onclick="fillDemoAccount('Student')" class="btn btn-secondary" style="font-size: 0.75rem; padding: 0.35rem 0.65rem;">
+                            <i class="fas fa-user-graduate"></i> Student (STU1001)
+                        </button>
+                        <button type="button" onclick="fillDemoAccount('Faculty')" class="btn btn-secondary" style="font-size: 0.75rem; padding: 0.35rem 0.65rem;">
+                            <i class="fas fa-chalkboard-user"></i> Faculty (FAC2001)
+                        </button>
+                        <button type="button" onclick="fillDemoAccount('Admin')" class="btn btn-secondary" style="font-size: 0.75rem; padding: 0.35rem 0.65rem;">
+                            <i class="fas fa-user-gear"></i> Admin (ADM3001)
+                        </button>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+    <script src="/static/js/main.js"></script>
+    <script src="/static/js/auth.js"></script>
+</body>
+</html>
