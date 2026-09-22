@@ -1,4 +1,4 @@
-from flask import Blueprint, request, jsonify, session
+from flask import Blueprint, request, jsonify, session, redirect, url_for
 from services.auth_service import AuthService
 from models.user import User
 
@@ -17,7 +17,6 @@ def login():
     if err:
         return jsonify({'success': False, 'message': err}), 401
 
-    # Stage 1 successful: prompt for MFA
     session['temp_user_id'] = user['id']
     return jsonify({
         'success': True,
@@ -45,53 +44,32 @@ def verify_mfa():
         return jsonify({'success': False, 'message': 'User not found.'}), 404
 
     if AuthService.verify_totp(user, otp_code):
-        # MFA Success -> Bind Session
         session.pop('temp_user_id', None)
         session['user_id'] = user['id']
         session['employee_id'] = user['employee_id']
         session['user_name'] = user['name']
         session['role_name'] = user['role_name']
         session['department_id'] = user['department_id']
+        
+        User.update_last_login(user['id'])
 
-        # Determine redirect route based on RBAC
-        role = user['role_name']
-        if role == 'Admin':
-            redirect_url = '/admin/dashboard'
-        elif role == 'Faculty/Approver':
+        redirect_url = '/student/dashboard'
+        if user['role_name'] == 'Faculty/Approver':
             redirect_url = '/approver/dashboard'
-        else:
-            redirect_url = '/student/dashboard'
+        elif user['role_name'] == 'Admin':
+            redirect_url = '/admin/dashboard'
 
         return jsonify({
             'success': True,
-            'user': {
-                'id': user['id'],
-                'name': user['name'],
-                'employee_id': user['employee_id'],
-                'role': user['role_name'],
-                'department': user['department_name']
-            },
+            'message': 'Login successful.',
             'redirect_url': redirect_url
         })
     else:
-        return jsonify({'success': False, 'message': 'Invalid authentication code. Please try again.'}), 400
+        return jsonify({'success': False, 'message': 'Invalid TOTP code.'}), 401
 
-from flask import redirect
-
-@auth_bp.route('/logout', methods=['POST', 'GET'])
+@auth_bp.route('/logout', methods=['GET', 'POST'])
 def logout():
     session.clear()
-    if request.is_json or request.headers.get('X-Requested-With') == 'XMLHttpRequest':
-        return jsonify({'success': True, 'message': 'Logged out successfully.', 'redirect_url': '/login'})
-    return redirect('/login')
-
-@auth_bp.route('/me', methods=['GET'])
-def get_current_user():
-    user_id = session.get('user_id')
-    if not user_id:
-        return jsonify({'authenticated': False}), 401
-    user = User.get_by_id(user_id)
-    if not user:
-        session.clear()
-        return jsonify({'authenticated': False}), 401
-    return jsonify({'authenticated': True, 'user': user})
+    if request.method == 'GET':
+        return redirect('/login')
+    return jsonify({'success': True, 'message': 'Logged out successfully.', 'redirect_url': '/login'})

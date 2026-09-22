@@ -36,7 +36,7 @@
         <main class="main-wrapper">
             <header class="top-header">
                 <div class="header-left">
-                    <h3 style="font-size: 1.1rem; font-weight: 700;">User Management & Accounts</h3>
+                    <h3 style="font-size: 1.1rem; font-weight: 700;">User Management & Faculty Allocation</h3>
                 </div>
                 <div class="header-right">
                     <button class="icon-btn" id="theme-toggle-btn" title="Toggle Theme"></button>
@@ -47,12 +47,17 @@
             <div class="content-area">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
                     <div>
-                        <h1 style="font-size: 1.8rem;">Registered Users 👥</h1>
-                        <p style="color: var(--text-secondary); font-size: 0.95rem;">Manage accounts, roles, departments, and MFA credentials.</p>
+                        <h1 style="font-size: 1.8rem;">Registered Users</h1>
+                        <p style="color: var(--text-secondary); font-size: 0.95rem;">Manage accounts, roles, assigned faculty advisors, and MFA credentials.</p>
                     </div>
-                    <button class="btn btn-primary" onclick="openAddUserModal()">
-                        <i class="fas fa-user-plus"></i> + Add New User
-                    </button>
+                    <div style="display: flex; gap: 0.75rem;">
+                        <button class="btn btn-secondary" onclick="openAssignFacultyModal()">
+                            <i class="fas fa-chalkboard-user"></i> Assign Faculty to Multiple Students
+                        </button>
+                        <button class="btn btn-primary" onclick="openAddUserModal()">
+                            <i class="fas fa-user-plus"></i> + Add New User
+                        </button>
+                    </div>
                 </div>
 
                 <div class="card">
@@ -63,7 +68,7 @@
                                     <th>ID / Employee</th>
                                     <th>Name & Email</th>
                                     <th>Department</th>
-                                    <th>Role</th>
+                                    <th>Role & Advisor</th>
                                     <th>MFA Status</th>
                                     <th>Account Status</th>
                                     <th>Actions</th>
@@ -78,7 +83,14 @@
                                         <div style="font-size: 0.75rem; color: var(--text-muted);">{{ u.email }}</div>
                                     </td>
                                     <td>{{ u.department_name }}</td>
-                                    <td><span class="badge badge-personal">{{ u.role_name }}</span></td>
+                                    <td>
+                                        <span class="badge badge-personal">{{ u.role_name }}</span>
+                                        {% if u.role_name == 'Student/Employee' %}
+                                        <div style="font-size: 0.75rem; color: var(--primary); margin-top: 0.25rem; font-weight: 600;">
+                                            <i class="fas fa-user-tie"></i> Advisor: {{ u.advisor_name or 'Unassigned' }}
+                                        </div>
+                                        {% endif %}
+                                    </td>
                                     <td>
                                         {% if u.mfa_enabled %}
                                         <span class="badge badge-approved"><i class="fas fa-shield"></i> TOTP Active</span>
@@ -92,9 +104,14 @@
                                         </span>
                                     </td>
                                     <td>
-                                        <button onclick="resetMfa({{ u.id }}, '{{ u.name }}')" class="btn btn-secondary" style="padding: 0.3rem 0.65rem; font-size: 0.75rem;">
-                                            <i class="fas fa-key"></i> Reset MFA
-                                        </button>
+                                        <div style="display: flex; gap: 0.35rem;">
+                                            <button onclick="resetMfa({{ u.id }}, '{{ u.name }}')" class="btn btn-secondary" style="padding: 0.3rem 0.65rem; font-size: 0.75rem;">
+                                                <i class="fas fa-key"></i> Reset MFA
+                                            </button>
+                                            <button onclick="deleteUser({{ u.id }}, '{{ u.name }}', '{{ u.employee_id }}')" class="btn btn-danger" style="padding: 0.3rem 0.65rem; font-size: 0.75rem;">
+                                                <i class="fas fa-trash-can"></i> Delete
+                                            </button>
+                                        </div>
                                     </td>
                                 </tr>
                                 {% endfor %}
@@ -144,10 +161,11 @@
                         <div>
                             <label style="font-size: 0.85rem; font-weight: 600;">Department</label>
                             <select id="new-dept" class="btn btn-secondary" style="width: 100%; padding: 0.65rem; text-align: left;">
-                                <option value="1">Computer Science</option>
+                                <option value="1">Computer Science & Eng.</option>
                                 <option value="2">Information Technology</option>
                                 <option value="3">Electronics & Comm.</option>
-                                <option value="4">Mechanical Eng.</option>
+                                <option value="4">Electrical Engineering</option>
+                                <option value="5">Mechanical Engineering</option>
                             </select>
                         </div>
                     </div>
@@ -158,10 +176,125 @@
         </div>
     </div>
 
+    <!-- Assign Faculty Modal -->
+    <div class="modal-overlay" id="assign-faculty-modal">
+        <div class="modal-container" style="max-width: 600px;">
+            <div class="modal-header">
+                <h3>Assign 1 Faculty to Multiple Students</h3>
+                <button class="icon-btn" onclick="closeAssignFacultyModal()"><i class="fas fa-xmark"></i></button>
+            </div>
+            <div class="modal-body">
+                <form id="assign-faculty-form" onsubmit="submitFacultyAssignment(event)">
+                    <div style="margin-bottom: 1.25rem;">
+                        <label style="font-size: 0.85rem; font-weight: 700; display: block; margin-bottom: 0.4rem;">1. Select Faculty Member / Approver</label>
+                        <select id="assign-faculty-select" class="form-input" style="padding: 0.65rem;" required>
+                            <option value="">-- Choose Faculty Approver --</option>
+                        </select>
+                    </div>
+
+                    <div style="margin-bottom: 1.25rem;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+                            <label style="font-size: 0.85rem; font-weight: 700;">2. Select Students to Assign</label>
+                            <label style="font-size: 0.75rem; color: var(--primary); cursor: pointer;">
+                                <input type="checkbox" onchange="selectAllStudents(this.checked)"> Select All Students
+                            </label>
+                        </div>
+
+                        <div id="assign-students-list" style="max-height: 220px; overflow-y: auto; border: 1px solid var(--border-color); border-radius: var(--radius-sm); padding: 0.75rem; background: var(--bg-main);">
+                            <!-- Dynamic student check list -->
+                        </div>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary" style="width: 100%; padding: 0.75rem;">
+                        <i class="fas fa-check"></i> Assign Faculty to Selected Students
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+
     <script src="/static/js/main.js"></script>
     <script>
         function openAddUserModal() { document.getElementById('add-user-modal').classList.add('active'); }
         function closeAddUserModal() { document.getElementById('add-user-modal').classList.remove('active'); }
+
+        function openAssignFacultyModal() {
+            document.getElementById('assign-faculty-modal').classList.add('active');
+            loadFacultyAssignments();
+        }
+        function closeAssignFacultyModal() { document.getElementById('assign-faculty-modal').classList.remove('active'); }
+
+        async function loadFacultyAssignments() {
+            try {
+                const res = await fetch('/api/admin/faculty-assignments');
+                const data = await res.json();
+
+                if (data.success) {
+                    const facSelect = document.getElementById('assign-faculty-select');
+                    facSelect.innerHTML = '<option value="">-- Choose Faculty Approver --</option>' +
+                        data.faculty_members.map(f => `<option value="${f.id}">${f.name} (${f.employee_id} • ${f.department_name})</option>`).join('');
+
+                    const studentList = document.getElementById('assign-students-list');
+                    if (data.students.length === 0) {
+                        studentList.innerHTML = '<div style="font-size: 0.85rem; color: var(--text-muted); text-align: center;">No students found.</div>';
+                    } else {
+                        studentList.innerHTML = data.students.map(s => `
+                            <label style="display: flex; align-items: center; justify-content: space-between; padding: 0.4rem 0.5rem; border-bottom: 1px solid var(--border-color); cursor: pointer;">
+                                <div style="display: flex; align-items: center; gap: 0.5rem;">
+                                    <input type="checkbox" class="student-checkbox" value="${s.id}" style="accent-color: var(--primary);">
+                                    <div>
+                                        <div style="font-size: 0.85rem; font-weight: 600; color: var(--text-primary);">${s.name} <span style="font-size: 0.75rem; color: var(--text-muted);">(${s.employee_id})</span></div>
+                                        <div style="font-size: 0.75rem; color: var(--text-secondary);">${s.department_name}</div>
+                                    </div>
+                                </div>
+                                <span style="font-size: 0.75rem; color: var(--primary);">${s.advisor_name ? 'Advisor: ' + s.advisor_name : 'Unassigned'}</span>
+                            </label>
+                        `).join('');
+                    }
+                }
+            } catch (err) {
+                showToast('Error loading faculty list', 'danger');
+            }
+        }
+
+        function selectAllStudents(checked) {
+            document.querySelectorAll('.student-checkbox').forEach(cb => cb.checked = checked);
+        }
+
+        async function submitFacultyAssignment(e) {
+            e.preventDefault();
+            const facultyId = document.getElementById('assign-faculty-select').value;
+            const checkedBoxes = document.querySelectorAll('.student-checkbox:checked');
+            const studentIds = Array.from(checkedBoxes).map(cb => parseInt(cb.value));
+
+            if (!facultyId) {
+                showToast('Please select a Faculty member.', 'warning');
+                return;
+            }
+            if (studentIds.length === 0) {
+                showToast('Please select at least one student.', 'warning');
+                return;
+            }
+
+            try {
+                const res = await fetch('/api/admin/assign-faculty', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ faculty_id: parseInt(facultyId), student_ids: studentIds })
+                });
+                const data = await res.json();
+
+                if (data.success) {
+                    showToast(data.message, 'success');
+                    closeAssignFacultyModal();
+                    setTimeout(() => location.reload(), 800);
+                } else {
+                    showToast(data.message || 'Error assigning faculty.', 'danger');
+                }
+            } catch (err) {
+                showToast('Network error during faculty assignment.', 'danger');
+            }
+        }
 
         async function handleAddUserSubmit(e) {
             e.preventDefault();
@@ -198,6 +331,23 @@
                 const data = await res.json();
                 if (data.success) {
                     showToast(data.message, 'success');
+                }
+            }
+        }
+
+        async function deleteUser(userId, userName, empId) {
+            if (confirm(`Are you sure you want to permanently delete user "${userName}" (${empId})?\n\nThis will remove their leave applications, history, and notifications from the system.`)) {
+                try {
+                    const res = await fetch(`/api/admin/users/${userId}`, { method: 'DELETE' });
+                    const data = await res.json();
+                    if (data.success) {
+                        showToast(data.message, 'success');
+                        setTimeout(() => location.reload(), 800);
+                    } else {
+                        showToast(data.message || 'Error deleting user.', 'danger');
+                    }
+                } catch (err) {
+                    showToast('Network error while deleting user.', 'danger');
                 }
             }
         }

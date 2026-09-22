@@ -19,14 +19,13 @@ def get_dashboard_data():
     if not user:
         return jsonify({'success': False, 'message': 'Unauthorized'}), 401
 
-    pending = LeaveRequest.get_pending_for_approver(user['role_name'], user['department_id'])
+    pending = LeaveRequest.get_pending_for_approver(user['role_name'], user['department_id'], user['id'])
     
-    # Calculate approver statistics
     all_reqs = LeaveRequest.get_all_requests()
     approved_today = sum(1 for r in all_reqs if r['status'] == 'Approved')
     rejected_count = sum(1 for r in all_reqs if r['status'] == 'Rejected')
     forwarded_count = sum(1 for r in all_reqs if r['status'] == 'Forwarded')
-    urgent_count = sum(1 for r in pending if r['ai_category'] == 'Urgent')
+    urgent_count = sum(1 for r in pending if r.get('ai_category') == 'Urgent')
 
     return jsonify({
         'success': True,

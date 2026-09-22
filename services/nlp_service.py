@@ -1,105 +1,67 @@
-import re
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.naive_bayes import MultinomialNB
+import numpy as np
 
-class NLPService:
-    def __init__(self):
-        self.vectorizer = TfidfVectorizer(stop_words='english', max_features=500)
-        self.model = MultinomialNB()
-        self._train_initial_model()
+class NLPClassifier:
+    vectorizer = None
+    model = None
 
-    def _train_initial_model(self):
-        """
-        Trains a initial lightweight classification model on curated leave reasons.
-        """
-        dataset = [
-            # Medical
-            ("Doctor advised 3 days complete bed rest for severe influenza and fever", "Medical"),
-            ("Scheduled surgical procedure at city hospital hospital admission needed", "Medical"),
-            ("High fever body ache severe migraine doctor prescription attached", "Medical"),
-            ("Dental emergency extraction surgery pain prescription", "Medical"),
-            ("Food poisoning hospitalized IV fluids recovery doctor certificate", "Medical"),
-            ("Tested positive for viral infection quarantine isolation doctor advice", "Medical"),
-            ("Chronic back pain physiotherapy session medical checkup appointment", "Medical"),
-            ("Eye infection severe pain light sensitivity medical rest prescribed", "Medical"),
+    @classmethod
+    def train_model(cls):
+        training_texts = [
+            # Medical Reasons
+            "High fever, flu, severe headache, doctor advised 3 days bed rest.",
+            "Suffering from viral infection and typhoid fever. Medical certificate attached.",
+            "Undergoing dental surgery and root canal treatment.",
+            "Severe stomach ache, food poisoning, admitted to hospital.",
+            "Physiotherapy session and back pain recovery.",
+            "Eye infection and consultation with ophthalmologist.",
 
-            # Personal
-            ("Attending my elder sister wedding ceremony in my hometown", "Personal"),
-            ("Family function traditional pooja housewarming ceremony", "Personal"),
-            ("Vacation family trip planned months ago travel tickets booked", "Personal"),
-            ("Attending relative marriage anniversary celebration", "Personal"),
-            ("Personal work at passport office government office documentation", "Personal"),
-            ("Moving to new apartment packing shifting household belongings", "Personal"),
-            ("Attending college alumni meetup annual reunion trip", "Personal"),
-            ("Religious pilgrimage temple visit family tradition", "Personal"),
+            # Personal Reasons
+            "Attending elder sister marriage ceremony and family function in hometown.",
+            "Family emergency at home, need to attend personal domestic work.",
+            "Attending cousin wedding and pre-wedding celebrations.",
+            "Going to hometown for festive celebration with family.",
+            "Personal work regarding passport renewal and bank documentation.",
+            "Relocating to new residential address and shifting house.",
 
-            # Urgent
-            ("Immediate family medical emergency hospital admission critical condition", "Urgent"),
-            ("Sudden death of close family member attending funeral rituals", "Urgent"),
-            ("Accident on highway emergency treatment hospital admission", "Urgent"),
-            ("Severe water pipe burst home flooded emergency plumbing repairs", "Urgent"),
-            ("Urgent legal summons court hearing mandatory attendance", "Urgent"),
-            ("Emergency evacuation family crisis need immediate leave today", "Urgent"),
-            ("Child high fever hospitalized urgent emergency care needed", "Urgent"),
-            ("Urgent home break-in police report insurance investigation", "Urgent")
+            # Urgent Reasons
+            "Urgent sudden hospitalization of immediate family member in ICU.",
+            "Urgent emergency situation at home due to natural calamity.",
+            "Urgent medical emergency, accident involving close relative.",
+            "Critical emergency requiring immediate physical presence.",
+            "Unforeseen urgent domestic crisis requiring instant attention."
         ]
 
-        texts, labels = zip(*dataset)
-        X = self.vectorizer.fit_transform(texts)
-        self.model.fit(X, labels)
+        labels = [
+            "Medical", "Medical", "Medical", "Medical", "Medical", "Medical",
+            "Personal", "Personal", "Personal", "Personal", "Personal", "Personal",
+            "Urgent", "Urgent", "Urgent", "Urgent", "Urgent"
+        ]
 
-    def classify_reason(self, reason_text):
-        """
-        Classifies a given leave reason into 'Medical', 'Personal', or 'Urgent'.
-        Returns category, confidence percentage, and explanation.
-        """
-        if not reason_text or len(reason_text.strip()) < 5:
-            return {
-                'category': 'Personal',
-                'confidence': 75.0,
-                'explanation': 'Short text defaults to Personal leave category.'
-            }
+        cls.vectorizer = TfidfVectorizer(ngram_range=(1, 2), stop_words='english')
+        X = cls.vectorizer.fit_transform(training_texts)
 
-        cleaned = re.sub(r'[^a-zA-Z\s]', '', reason_text.lower())
-        
-        # Rule-based priority keywords check for higher accuracy
-        urgent_keywords = ['urgent', 'emergency', 'funeral', 'accident', 'hospitalized', 'crisis', 'critical', 'immediate']
-        medical_keywords = ['fever', 'doctor', 'hospital', 'surgery', 'clinic', 'sick', 'prescribed', 'illness', 'bed rest', 'patient']
-        
-        X_test = self.vectorizer.transform([cleaned])
-        probs = self.model.predict_proba(X_test)[0]
-        classes = self.model.classes_
+        cls.model = MultinomialNB()
+        cls.model.fit(X, labels)
 
-        best_idx = probs.argmax()
-        category = classes[best_idx]
-        confidence = float(probs[best_idx] * 100)
+    @classmethod
+    def classify_reason(cls, text):
+        if not text or len(text.strip()) == 0:
+            return {'category': 'Personal', 'confidence': 0.70}
 
-        # Keyword boost validation
-        for word in urgent_keywords:
-            if word in cleaned:
-                category = 'Urgent'
-                confidence = max(confidence, 91.5)
-                break
-        if category != 'Urgent':
-            for word in medical_keywords:
-                if word in cleaned:
-                    category = 'Medical'
-                    confidence = max(confidence, 89.0)
-                    break
+        if cls.model is None or cls.vectorizer is None:
+            cls.train_model()
 
-        confidence = round(min(confidence, 98.5), 1)
+        try:
+            X_test = cls.vectorizer.transform([text])
+            probs = cls.model.predict_proba(X_test)[0]
+            max_idx = np.argmax(probs)
+            category = cls.model.classes_[max_idx]
+            confidence = round(float(probs[max_idx]), 2)
+            return {'category': category, 'confidence': max(confidence, 0.75)}
+        except Exception:
+            return {'category': 'Personal', 'confidence': 0.80}
 
-        explanations = {
-            'Medical': 'Your request contains terms associated with illness, doctor recommendations, or medical care.',
-            'Personal': 'Your request indicates personal commitments, ceremonies, or planned events.',
-            'Urgent': 'Your request contains urgent/emergency phrasing requiring prioritized approver review.'
-        }
-
-        return {
-            'category': category,
-            'confidence': confidence,
-            'explanation': explanations.get(category, 'Assigned based on natural language analysis.')
-        }
-
-# Singleton Instance
-nlp_classifier = NLPService()
+# Initialize model on module load
+NLPClassifier.train_model()

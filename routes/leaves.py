@@ -1,119 +1,128 @@
 from flask import Blueprint, request, jsonify, session
 from services.leave_service import LeaveService
-from services.nlp_service import nlp_classifier
+from services.nlp_service import NLPClassifier
 from models.leave import LeaveRequest
-from models.approval import ApprovalStep
 from models.user import User
 
 leaves_bp = Blueprint('leaves', __name__, url_prefix='/api/leaves')
 
-@leaves_bp.route('/classify-reason', methods=['POST'])
-def classify_reason():
-    data = request.json or {}
-    reason = data.get('reason', '')
-    res = nlp_classifier.classify_reason(reason)
-    return jsonify({'success': True, 'classification': res})
+def get_current_user():
+    user_id = session.get('user_id')
+    if not user_id:
+        return None
+    return User.get_by_id(user_id)
 
 @leaves_bp.route('', methods=['POST'])
 def submit_leave():
-    user_id = session.get('user_id')
-    if not user_id:
-        return jsonify({'success': False, 'message': 'Authentication required.'}), 401
+    user = get_current_user()
+    if not user:
+        return jsonify({'success': False, 'message': 'Unauthorized'}), 401
 
     data = request.json or {}
     leave_type = data.get('leave_type')
     start_date = data.get('start_date')
     end_date = data.get('end_date')
-    total_days = int(data.get('total_days', 1))
     reason = data.get('reason', '').strip()
-    document_path = data.get('document_path')
 
     if not leave_type or not start_date or not end_date or not reason:
         return jsonify({'success': False, 'message': 'Please fill all required fields.'}), 400
 
-    req_id, req_num, nlp_res = LeaveService.submit_leave(
-        user_id=user_id,
+    req_id, req_num, err = LeaveService.submit_leave(
+        user_id=user['id'],
         leave_type=leave_type,
         start_date=start_date,
         end_date=end_date,
-        total_days=total_days,
-        reason=reason,
-        document_path=document_path
+        reason=reason
     )
+
+    if err:
+        return jsonify({'success': False, 'message': err}), 400
 
     return jsonify({
         'success': True,
-        'message': f'Leave request #{req_num} submitted successfully.',
+        'message': f'Leave application {req_num} submitted successfully.',
         'request_id': req_id,
-        'request_number': req_num,
-        'ai_classification': nlp_res
+        'request_number': req_num
     })
 
-@leaves_bp.route('/<int:request_id>', methods=['GET'])
-def get_leave_detail(request_id):
-    user_id = session.get('user_id')
-    if not user_id:
-        return jsonify({'success': False, 'message': 'Authentication required.'}), 401
+@leaves_bp.route('/classify-reason', methods=['POST'])
+def classify_reason():
+    data = request.json or {}
+    reason = data.get('reason', '')
 
-    leave = LeaveRequest.get_by_id(request_id)
+    res = NLPClassifier.classify_reason(reason)
+    return jsonify({
+        'success': True,
+        'ai_category': res['category'],
+        'confidence': res['confidence'],
+        'reason_snippet': reason[:50]
+    })
+
+@leaves_bp.route('/<int:leave_id>', methods=['GET'])
+def get_leave_detail(leave_id):
+    user = get_current_user()
+    if not user:
+        return jsonify({'success': False, 'message': 'Unauthorized'}), 401
+
+    leave = LeaveRequest.get_by_id(leave_id)
     if not leave:
         return jsonify({'success': False, 'message': 'Leave request not found.'}), 404
 
-    # RBAC check: allow user if owner, approver, or admin
-    user = User.get_by_id(user_id)
-    if user['role_name'] == 'Student/Employee' and leave['user_id'] != user_id:
+    # Verification: Student can only view their own leave, Approvers/Admin can view all
+    if user['role_name'] == 'Student/Employee' and leave['user_id'] != user['id']:
         return jsonify({'success': False, 'message': 'Access denied.'}), 403
 
-    steps = ApprovalStep.get_steps_for_request(request_id)
-    user_balance = LeaveRequest.get_user_leave_balance(leave['user_id'])
-
+    steps = LeaveService.get_approval_timeline(leave_id)
     return jsonify({
         'success': True,
         'leave': leave,
-        'approval_timeline': steps,
-        'user_balance': user_balance
+        'timeline': steps
     })
 
-@leaves_bp.route('/<int:request_id>/approve', methods=['POST'])
-def approve_leave(request_id):
-    user_id = session.get('user_id')
-    if not user_id:
-        return jsonify({'success': False, 'message': 'Authentication required.'}), 401
+@leaves_bp.route('/<int:leave_id>/approve', methods=['POST'])
+def approve_leave(leave_id):
+    user = get_current_user()
+    if not user or user['role_name'] not in ['Faculty/Approver', 'Admin']:
+        return jsonify({'success': False, 'message': 'Unauthorized'}), 401
 
     data = request.json or {}
     comment = data.get('comment', 'Approved')
 
-    ok, msg = LeaveService.process_approval_action(request_id, user_id, 'Approve', comment)
-    if ok:
-        return jsonify({'success': True, 'message': msg})
-    return jsonify({'success': False, 'message': msg}), 400
+    success, msg = LeaveService.approve_leave(leave_id, user['id'], user['role_name'], comment)
+    if not success:
+        return jsonify({'success': False, 'message': msg}), 400
 
-@leaves_bp.route('/<int:request_id>/reject', methods=['POST'])
-def reject_leave(request_id):
-    user_id = session.get('user_id')
-    if not user_id:
-        return jsonify({'success': False, 'message': 'Authentication required.'}), 401
+    return jsonify({'success': True, 'message': msg})
+
+@leaves_bp.route('/<int:leave_id>/reject', methods=['POST'])
+def reject_leave(leave_id):
+    user = get_current_user()
+    if not user or user['role_name'] not in ['Faculty/Approver', 'Admin']:
+        return jsonify({'success': False, 'message': 'Unauthorized'}), 401
 
     data = request.json or {}
     comment = data.get('comment', '').strip()
+
     if not comment:
-        return jsonify({'success': False, 'message': 'Rejection reason is required.'}), 400
+        return jsonify({'success': False, 'message': 'Please provide a reason for rejection.'}), 400
 
-    ok, msg = LeaveService.process_approval_action(request_id, user_id, 'Reject', comment)
-    if ok:
-        return jsonify({'success': True, 'message': msg})
-    return jsonify({'success': False, 'message': msg}), 400
+    success, msg = LeaveService.reject_leave(leave_id, user['id'], user['role_name'], comment)
+    if not success:
+        return jsonify({'success': False, 'message': msg}), 400
 
-@leaves_bp.route('/<int:request_id>/forward', methods=['POST'])
-def forward_leave(request_id):
-    user_id = session.get('user_id')
-    if not user_id:
-        return jsonify({'success': False, 'message': 'Authentication required.'}), 401
+    return jsonify({'success': True, 'message': msg})
+
+@leaves_bp.route('/<int:leave_id>/forward', methods=['POST'])
+def forward_leave(leave_id):
+    user = get_current_user()
+    if not user or user['role_name'] != 'Faculty/Approver':
+        return jsonify({'success': False, 'message': 'Unauthorized'}), 401
 
     data = request.json or {}
-    comment = data.get('comment', 'Forwarded to Administration for secondary approval.')
+    comment = data.get('comment', 'Forwarded to Admin')
 
-    ok, msg = LeaveService.process_approval_action(request_id, user_id, 'Forward', comment)
-    if ok:
-        return jsonify({'success': True, 'message': msg})
-    return jsonify({'success': False, 'message': msg}), 400
+    success, msg = LeaveService.forward_leave(leave_id, user['id'], comment)
+    if not success:
+        return jsonify({'success': False, 'message': msg}), 400
+
+    return jsonify({'success': True, 'message': msg})

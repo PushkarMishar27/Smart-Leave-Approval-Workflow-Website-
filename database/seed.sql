@@ -41,7 +41,7 @@ INSERT IGNORE INTO users (id, employee_id, name, email, password_hash, role_id, 
 (5, 'STU1005', 'Vikram Singh', 'vikram.singh@smartleave.edu.in', 'scrypt:32768:8:1$u7xK7O6yW1k3m2a7$8e945c2cf72a5a587dd439063c4379a0cf5fbfaedfa0c62bd93ec974e64f7df56c3ee796d194c502b4d18fae47571db29c8e19e7552554743ceb6c317fdbfbfb', 1, 4, 'JBSWY3DPEHPK3PXP', 1, 'Active'),
 (6, 'FAC2001', 'Dr. Rajesh Kumar', 'rajesh.kumar@smartleave.edu.in', 'scrypt:32768:8:1$u7xK7O6yW1k3m2a7$8e945c2cf72a5a587dd439063c4379a0cf5fbfaedfa0c62bd93ec974e64f7df56c3ee796d194c502b4d18fae47571db29c8e19e7552554743ceb6c317fdbfbfb', 2, 1, 'JBSWY3DPEHPK3PXP', 1, 'Active'),
 (7, 'FAC2002', 'Prof. Sunita Rao', 'sunita.rao@smartleave.edu.in', 'scrypt:32768:8:1$u7xK7O6yW1k3m2a7$8e945c2cf72a5a587dd439063c4379a0cf5fbfaedfa0c62bd93ec974e64f7df56c3ee796d194c502b4d18fae47571db29c8e19e7552554743ceb6c317fdbfbfb', 2, 2, 'JBSWY3DPEHPK3PXP', 1, 'Active'),
-(8, 'ADM3001', 'Admin Amit Sharma', 'amit.sharma@smartleave.edu.in', 'scrypt:32768:8:1$u7xK7O6yW1k3m2a7$8e945c2cf72a5a587dd439063c4379a0cf5fbfaedfa0c62bd93ec974e64f7df56c3ee796d194c502b4d18fae47571db29c8e19e7552554743ceb6c317fdbfbfb', 3, 6, 'JBSWY3DPEHPK3PXP', 1, 'Active');
+(8, 'ADM3001', 'Pushkar Mishra', 'pushkar.mishra@smartleave.edu.in', 'scrypt:32768:8:1$u7xK7O6yW1k3m2a7$8e945c2cf72a5a587dd439063c4379a0cf5fbfaedfa0c62bd93ec974e64f7df56c3ee796d194c502b4d18fae47571db29c8e19e7552554743ceb6c317fdbfbfb', 3, 6, 'JBSWY3DPEHPK3PXP', 1, 'Active');
 
 -- 6. Leave Policies
 INSERT IGNORE INTO leave_policies (id, leave_type, allowance, max_consecutive_days, department_id, active) VALUES

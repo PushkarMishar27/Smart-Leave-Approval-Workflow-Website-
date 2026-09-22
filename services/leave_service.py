@@ -1,21 +1,46 @@
-from models.leave import LeaveRequest
+from models.leave import LeaveRequest, LeavePolicy
 from models.approval import ApprovalStep
+from models.user import User
 from models.audit import AuditLog
-from services.nlp_service import nlp_classifier
+from services.nlp_service import NLPClassifier
 from services.workflow_service import WorkflowService
 from services.notification_service import NotificationService
-from models.user import User
+import datetime
 
 class LeaveService:
     @staticmethod
-    def submit_leave(user_id, leave_type, start_date, end_date, total_days, reason, document_path=None):
-        # Run NLP classification
-        nlp_res = nlp_classifier.classify_reason(reason)
-        ai_category = nlp_res['category']
-        ai_confidence = nlp_res['confidence']
+    def submit_leave(user_id, leave_type, start_date, end_date, reason):
+        # Date Math calculation
+        try:
+            d1 = datetime.datetime.strptime(start_date, '%Y-%m-%d')
+            d2 = datetime.datetime.strptime(end_date, '%Y-%m-%d')
+            total_days = (d2 - d1).days + 1
+        except Exception:
+            return None, None, "Invalid date format. Use YYYY-MM-DD."
 
-        # Save leave request
-        request_id, req_num = LeaveRequest.create(
+        if total_days <= 0:
+            return None, None, "End date must be on or after start date."
+
+        policy = LeavePolicy.get_by_type(leave_type)
+        if policy and total_days > policy['max_consecutive_days']:
+            return None, None, f"Exceeds maximum consecutive days allowed for {leave_type} ({policy['max_consecutive_days']} days)."
+
+        # Balance check
+        balances = LeaveService.calculate_user_balances(user_id)
+        current_bal = balances.get(leave_type, {}).get('remaining', 12)
+        if total_days > current_bal:
+            return None, None, f"Insufficient balance for {leave_type}. Remaining: {current_bal} days, Requested: {total_days} days."
+
+        # NLP classification
+        ai_res = NLPClassifier.classify_reason(reason)
+        ai_category = ai_res['category']
+        ai_confidence = ai_res['confidence']
+
+        # Determine level & escalation
+        initial_level = WorkflowService.determine_initial_level(total_days, ai_category)
+
+        # Create leave request
+        req_id, req_num = LeaveRequest.create(
             user_id=user_id,
             leave_type=leave_type,
             start_date=start_date,
@@ -23,107 +48,111 @@ class LeaveService:
             total_days=total_days,
             reason=reason,
             ai_category=ai_category,
-            ai_confidence=ai_confidence,
-            document_path=document_path
+            ai_confidence=ai_confidence
         )
 
-        # Audit log
-        AuditLog.log(user_id, 'SUBMIT_LEAVE', 'leave_requests', request_id, {
+        # Update initial level if escalated directly to Admin
+        if initial_level == 'Admin':
+            LeaveRequest.update_status(req_id, 'Pending', 'Admin')
+
+        # Log audit trail
+        AuditLog.log(user_id, 'SUBMIT_LEAVE', 'leave_requests', req_id, {
             'request_number': req_num,
             'leave_type': leave_type,
-            'total_days': total_days,
+            'days': total_days,
             'ai_category': ai_category
         })
 
-        # User notification
+        # Send Notifications
         user = User.get_by_id(user_id)
-        NotificationService.create(
-            user_id,
-            'Leave Submitted',
-            f'Your leave request #{req_num} for {total_days} day(s) has been submitted successfully.',
-            'info'
+        NotificationService.send_notification(
+            user_id=user_id,
+            title=f"Application {req_num} Submitted",
+            message=f"Your {leave_type} request for {total_days} day(s) has been submitted for approval."
         )
 
-        # Notify department approver / faculty
-        faculty_users = [u for u in User.get_all_users() if u['role_name'] == 'Faculty/Approver' and u['department_id'] == user['department_id']]
-        for fac in faculty_users:
-            NotificationService.create(
-                fac['id'],
-                'New Leave Review',
-                f'New leave request #{req_num} from {user["name"]} requires your review.',
-                'warning'
-            )
-
-        return request_id, req_num, nlp_res
+        return req_id, req_num, None
 
     @staticmethod
-    def process_approval_action(request_id, approver_id, action, comment=None):
-        leave_req = LeaveRequest.get_by_id(request_id)
-        if not leave_req:
-            return False, 'Leave request not found.'
+    def approve_leave(leave_id, approver_id, approver_role, comment):
+        leave = LeaveRequest.get_by_id(leave_id)
+        if not leave:
+            return False, "Leave request not found."
 
-        approver = User.get_by_id(approver_id)
-        if not approver:
-            return False, 'Approver user invalid.'
+        # Add approval step
+        ApprovalStep.add_step(leave_id, approver_id, approver_role, 'Approved', comment)
 
-        approver_level = 'Admin' if approver['role_name'] == 'Admin' else 'Faculty'
-        
-        # Evaluate workflow transition
-        new_status, next_level = WorkflowService.evaluate_next_step(
-            current_level=approver_level,
-            action=action,
-            total_days=leave_req['total_days'],
-            ai_category=leave_req['ai_category']
+        # Update Request Status to Approved
+        LeaveRequest.update_status(leave_id, 'Approved', 'Completed')
+
+        # Log audit trail
+        AuditLog.log(approver_id, 'APPROVE_LEAVE', 'leave_requests', leave_id, {'status': 'Approved', 'comment': comment})
+
+        # Notify student
+        NotificationService.send_notification(
+            user_id=leave['user_id'],
+            title=f"Leave {leave['request_number']} Approved!",
+            message=f"Your {leave['leave_type']} request for {leave['total_days']} day(s) was approved."
         )
 
-        # Update leave status
-        LeaveRequest.update_status(request_id, new_status, next_level)
+        return True, f"Leave request {leave['request_number']} approved successfully."
 
-        # Record approval step
-        ApprovalStep.add_step(request_id, approver_id, approver_level, action, comment)
+    @staticmethod
+    def reject_leave(leave_id, approver_id, approver_role, comment):
+        leave = LeaveRequest.get_by_id(leave_id)
+        if not leave:
+            return False, "Leave request not found."
 
-        # Record audit log
-        AuditLog.log(approver_id, f'{action.upper()}_LEAVE', 'leave_requests', request_id, {
-            'request_number': leave_req['request_number'],
-            'action': action,
-            'new_status': new_status,
-            'comment': comment
-        })
+        ApprovalStep.add_step(leave_id, approver_id, approver_role, 'Rejected', comment)
+        LeaveRequest.update_status(leave_id, 'Rejected', 'Completed')
 
-        # Send notifications
-        req_num = leave_req['request_number']
-        applicant_id = leave_req['user_id']
-        
-        if new_status == 'Approved':
-            NotificationService.create(
-                applicant_id,
-                'Leave Approved 🎉',
-                f'Your leave request #{req_num} has been fully approved by {approver["name"]}. Balance updated.',
-                'success'
-            )
-        elif new_status == 'Rejected':
-            reason_msg = f' Reason: {comment}' if comment else ''
-            NotificationService.create(
-                applicant_id,
-                'Leave Rejected',
-                f'Your leave request #{req_num} was rejected by {approver["name"]}.{reason_msg}',
-                'danger'
-            )
-        elif new_status == 'Forwarded':
-            NotificationService.create(
-                applicant_id,
-                'Leave Escalated to Admin',
-                f'Your leave request #{req_num} has been forwarded to Administration for secondary review.',
-                'info'
-            )
-            # Notify admins
-            admin_users = [u for u in User.get_all_users() if u['role_name'] == 'Admin']
-            for adm in admin_users:
-                NotificationService.create(
-                    adm['id'],
-                    'Escalated Approval Required',
-                    f'Leave request #{req_num} from {leave_req["user_name"]} requires Admin approval.',
-                    'warning'
-                )
+        AuditLog.log(approver_id, 'REJECT_LEAVE', 'leave_requests', leave_id, {'status': 'Rejected', 'comment': comment})
 
-        return True, f'Leave request #{req_num} updated to {new_status}.'
+        NotificationService.send_notification(
+            user_id=leave['user_id'],
+            title=f"Leave {leave['request_number']} Rejected",
+            message=f"Your {leave['leave_type']} request was rejected. Reason: {comment}"
+        )
+
+        return True, f"Leave request {leave['request_number']} rejected."
+
+    @staticmethod
+    def forward_leave(leave_id, approver_id, comment):
+        leave = LeaveRequest.get_by_id(leave_id)
+        if not leave:
+            return False, "Leave request not found."
+
+        ApprovalStep.add_step(leave_id, approver_id, 'Faculty', 'Forwarded', comment)
+        LeaveRequest.update_status(leave_id, 'Forwarded', 'Admin')
+
+        AuditLog.log(approver_id, 'FORWARD_LEAVE', 'leave_requests', leave_id, {'comment': comment})
+
+        NotificationService.send_notification(
+            user_id=leave['user_id'],
+            title=f"Leave {leave['request_number']} Forwarded",
+            message=f"Your request has been forwarded to Admin for approval."
+        )
+
+        return True, f"Leave request {leave['request_number']} forwarded to Admin."
+
+    @staticmethod
+    def calculate_user_balances(user_id):
+        policies = LeavePolicy.get_all()
+        user_leaves = LeaveRequest.get_by_user_id(user_id)
+
+        balances = {}
+        for p in policies:
+            lt = p['leave_type']
+            allowance = p['allowance']
+            used = sum(l['total_days'] for l in user_leaves if l['leave_type'] == lt and l['status'] == 'Approved')
+            balances[lt] = {
+                'allowance': allowance,
+                'used': used,
+                'remaining': max(0, allowance - used),
+                'max_consecutive': p['max_consecutive_days']
+            }
+        return balances
+
+    @staticmethod
+    def get_approval_timeline(leave_id):
+        return ApprovalStep.get_steps_for_request(leave_id)
